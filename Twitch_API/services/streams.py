@@ -90,10 +90,12 @@ def retrieve_comments_stop(crawling_id):
             'id': crawling_id,
             'message': 'Connection stoped successfully'
         }
+        print(response_data)
         return response_data, 200
     else:
         response_data = {
             "id": crawling_id,
             'message': 'Connection not found. Please give a correct id'
         }
+        print(response_data)
         return response_data, 404
