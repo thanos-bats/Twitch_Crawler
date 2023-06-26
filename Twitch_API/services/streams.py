@@ -19,11 +19,10 @@ def get_streams(game_id, number_of_results, user_id, endpoint):
     print(f'params {params}')
     print()
     response_data, response_status = get_data(url, params, headers, number_of_results, None, {"data": []})
-    print(f'the response data: {response_data}')
-    print(f'the response status: {response_status}')
+
     for item in response_data["data"]:
         item.pop("type", None)
-        item["stream_url"] = "https://www.twitch.tv/" + item.pop("user_login", None)
+        item["stream_url"] = "https://www.twitch.tv/" + item["user_login"] #item.pop("user_login", None)
         item.pop("tags", None)
 
     return response_data, response_status
