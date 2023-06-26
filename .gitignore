@@ -1,0 +1,8 @@
+/*/.env
+
+/Twitch_API/__pycache__/
+/Twitch_API/*/__pycache__/
+/Twitch_API/*.json
+
+mongo/data/*
+
