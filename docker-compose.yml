@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  twitch_db:
+    image: mongo:6.0
+    ports:
+        - "27018:27017"
+    #container_name: twitch_db
+    volumes: 
+        - ./mongo/data:/data/db
+    restart: unless-stopped
+
+  init_twitch_db:
+    build:
+      context: ./Init_DB
+      dockerfile: Dockerfile
+    image: certh/m4d/init:1.0
+    depends_on:
+      - twitch_db
+    environment:
+      - MONGO_DB=mongodb://twitch_db:27017/
+
+  twitch_api:
+    build:
+      context: ./Twitch_API
+      dockerfile: Dockerfile
+    image: certh/m4d/api:1.3
+    ports:
+      - 3000:3000
+    depends_on:
+      - init_twitch_db
+    environment:
+      - MONGO_DB=mongodb://twitch_db:27017/
+    restart: unless-stopped
+
+
+
