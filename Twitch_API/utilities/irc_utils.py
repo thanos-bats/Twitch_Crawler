@@ -8,7 +8,7 @@ def send_command(irc, command):
     print(f'< {command}')
     irc.send((command + '\r\n').encode())
 
-def handle_messages(irc):
+def handle_messages(irc, crawling_id):
     stop_flag = getattr(threading.current_thread(), "stop_flag", False)
     
     while not stop_flag:
@@ -22,23 +22,19 @@ def handle_messages(irc):
 
         for msg in data.strip().split("\n"):
             if "PING" in msg:
-                print("PING - PONG")
                 send_command(irc, "PONG tmi.twitch.tv")
             elif "JOIN" in msg:
-                print("JOIN - successfully joined")
                 print(f'> {msg}')
             elif "PRIVMSG" in msg:
-                try:
-                    modified_message = modify_message(msg)
+                modified_message = modify_message(crawling_id, msg)
+                if modified_message:
                     socketio.emit('message', modified_message)
-                except Exception as e:
-                    print(f"Error: {e}")
             else:
                 print(">>: "+ msg)
         
         stop_flag = getattr(threading.current_thread(), "stop_flag", False)
 
-def modify_message(data):
+def modify_message(crawling_id, data):
     pattern = r":(?P<username>[^!]+)![^#]+#(?P<streamer>[^\s]+)\s*:(?P<message>.*)"
     match = re.match(pattern, data)
     
@@ -50,10 +46,11 @@ def modify_message(data):
     message = match.group('message').strip()
 
     data = {
+        "id": crawling_id,
         "streamer": streamer, 
         "username": username,
         "message": message,
-        "created_at": datetime.datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S") 
+        "created_at": datetime.datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") 
     }
 
     return data
