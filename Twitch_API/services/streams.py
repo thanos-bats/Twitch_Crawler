@@ -60,7 +60,7 @@ def retrieve_comments_start(crawling_id, channels):
         }
         return response_data, 404
     
-    irc_thread = threading.Thread(target=handle_messages, args=(irc,))
+    irc_thread = threading.Thread(target=handle_messages, args=(irc, crawling_id))
     irc_thread.start()
     
 
@@ -72,7 +72,7 @@ def retrieve_comments_start(crawling_id, channels):
         'channels': channels,
         'message': 'Connection started successfully'
     }
-    return response_data, 200
+    return response_data, 201
 
 def retrieve_comments_stop(crawling_id):
     irc = irc_connections.get(crawling_id)
@@ -90,12 +90,11 @@ def retrieve_comments_stop(crawling_id):
             'id': crawling_id,
             'message': 'Connection stoped successfully'
         }
-        print(response_data)
-        return response_data, 200
+        return response_data, 201
     else:
         response_data = {
             "id": crawling_id,
             'message': 'Connection not found. Please give a correct id'
         }
-        print(response_data)
         return response_data, 404
+    
