@@ -24,7 +24,7 @@ def get_streams(game_id, number_of_results, user_id, endpoint):
         item.pop("type", None)
         item["stream_url"] = "https://www.twitch.tv/" + item["user_login"] #item.pop("user_login", None)
         item.pop("tags", None)
-        item.post("tag_ids", None)
+        item.pop("tag_ids", None)
 
     return response_data, response_status
 
