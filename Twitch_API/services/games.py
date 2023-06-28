@@ -22,13 +22,13 @@ def get_games(after, games):
     if after is not None:
         params["after"] = after
 
-    response, error = make_request(url, params, headers)
+    response, status_code = make_request(url, params, headers)
 
-    if error and (not games["data"]):
-        return error, error['status']
+    if (status_code == 500) and (not games["data"]):
+        print(f'{response}')
 
-    if response:
-        json_data = response.json()
+    if response['data']:
+        json_data = response['data']
         games["data"].extend(json_data["data"])
 
         if ("pagination" in json_data) and ("cursor" in json_data["pagination"]) and (json_data["pagination"].get("cursor")):
