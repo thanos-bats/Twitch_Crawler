@@ -9,9 +9,9 @@ def get_user(user_name, user_id, endpoint):
     }
     params = create_dict_from_vars(id=user_id, login=user_name)
     print()
-    response, error = make_request(url, params, headers)
-    if error:
-        return error, error['status']
+    response, status_code = make_request(url, params, headers)
+    if status_code != 200:
+        return response, status_code
     
-    return response.json(), response.status_code
+    return response['data'], status_code
     

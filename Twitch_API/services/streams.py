@@ -8,18 +8,17 @@ import threading
 def get_streams(game_id, number_of_results, user_id, endpoint):
     client_id, access_token, base_url, _ = get_dotenv()
     url = f"{base_url}{endpoint}"
-
-    
     headers = {
         "Client-ID": client_id,
         "Authorization": f"Bearer {access_token}"
     }
     params = create_dict_from_vars(game_id=game_id, user_id=user_id)
-    print(f'Headers {headers}')
-    print(f'params {params}')
-    print()
+
     response_data, response_status = get_data(url, params, headers, number_of_results, None, {"data": []})
 
+    if response_status != 200:
+        return response_data, response_status
+    
     for item in response_data["data"]:
         item.pop("type", None)
         item["stream_url"] = "https://www.twitch.tv/" + item["user_login"] #item.pop("user_login", None)

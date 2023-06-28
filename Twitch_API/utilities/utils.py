@@ -46,14 +46,26 @@ def make_request(url, params, headers):
     try:
         response = requests.get(url, params=params, headers=headers)
         response.raise_for_status()
-        json_data = response.json()
-        
-        return response, None
+        response_data = {
+        'status': 'Success',
+        'data': response.json()  # Assuming the response contains JSON data
+        }
+        return response_data, 200
+    
     except requests.exceptions.RequestException as e:
-        # Handle request exceptions (e.g., network error, connection timeout)        
-        return None, json.loads(e.response.text)
+        # Handle request exceptions (e.g., network error, connection timeout)
+        error_data = {
+        'status': 'Error',
+        'message': str(e)
+        }
+        return error_data, 500
+    
     except ValueError as e:
-        return None, {"JSON Decoding Error": e}
+        error_data = {
+            'status': 'Error',
+            'message': 'JSON Decoding Error'
+            }
+        return error_data, 500
 
 def pagination_handler(json_data, number, len_data):
     remaining_number = number - len_data
@@ -75,23 +87,21 @@ def get_data(url, params, headers, number, after=None, data={"data": []}, first=
     if after is not None:
         params["after"] = after
 
-    response, error = make_request(url, params, headers)
-    
-    
-    if error and (not data["data"]): # If there is an error, we return the error
-        print(error)
-        return error, error['status']
+    response, status_code = make_request(url, params, headers)
 
-    json_data = response.json()
+    if status_code != 200 and (not data["data"]): # If there is an error, we return the error
+        return response, status_code
+
+    json_data = response['data']
     if not json_data.get("data") and not data["data"]:
-        return data, response.status_code
+        return data, status_code
 
     if not json_data:
-        return data, response.status_code
+        return data, status_code
     
     data["data"].extend(json_data["data"])
     if number == 0:
-        return data, response.status_code
+        return data, status_code
     
     after = json_data["pagination"]["cursor"]
 
