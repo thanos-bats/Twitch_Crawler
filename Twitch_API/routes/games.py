@@ -6,11 +6,9 @@ from utilities.utils import get_error_message
 
 @games_bp.route('/', methods=['GET'])
 def search_games():
-    print('Searching games')
     keyword = request.args.get('keyword')
     number = int(request.args.get('number_of_results', 20))
 
-    print(f'request path is {request.path}')
     if not keyword:
         return get_error_message('keyword')
 
