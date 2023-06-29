@@ -5,5 +5,4 @@ COPY . .
 
 RUN pip install -r requirements.txt
 
-CMD ["python", "client.py"]
-EXPOSE 3000
+CMD ["python","-u", "client.py"]

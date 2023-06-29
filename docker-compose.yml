@@ -24,7 +24,7 @@ services:
     build:
       context: ./Twitch_API
       dockerfile: Dockerfile
-    image: certh/m4d/api:1.3
+    image: certh/m4d/api:1.6
     ports:
       - 3000:3000
     container_name: twitch_api
@@ -33,16 +33,16 @@ services:
         condition: service_completed_successfully
     environment:
       - MONGO_DB=mongodb://twitch_db:27017/
-    restart: unless-stopped
+    #restart: unless-stopped
 
   twitch_ctrl:
     build:
       context: ./Twitch_Ctrl
       dockerfile: Dockerfile
-    image: certh/m4d/ctrl:2.0
+    image: certh/m4d/ctrl:2.3
     container_name: twitch_ctrl
     depends_on:
-      twitch_api:
-        condition: 
-    restart: unless-stopped
+      - twitch_api
+    environment:
+      - SOCKET_URL=http://twitch_api:3000
     

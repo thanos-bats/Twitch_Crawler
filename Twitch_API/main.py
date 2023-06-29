@@ -15,7 +15,7 @@ def run_scheduler():
 
 def run_app():
     print('> Starting socketio.run(app)')
-    socketio.run(app, debug=False, port=3000, host="0.0.0.0")
+    socketio.run(app, debug=False, port=3000, host="0.0.0.0", allow_unsafe_werkzeug=True)
 
 if __name__ == '__main__':
     scheduler_thread = threading.Thread(target=run_scheduler)

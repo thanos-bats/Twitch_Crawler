@@ -27,12 +27,6 @@ def start_client():
     except Exception as e:
         print('> Error connecting: ', e)
 
-    while True:
-        message = input('Enter "quit" to exit\n')
-        if message.lower() == 'quit':
-            break
-
-    socket.disconnect()
 
 if __name__ == '__main__':
     start_client()
