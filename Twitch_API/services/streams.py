@@ -79,7 +79,6 @@ def retrieve_comments_stop(crawling_id):
 
     if irc_thread and irc:
         irc_thread.stop_flag = True
-        
         irc.close()
         
         del irc_threads[crawling_id]

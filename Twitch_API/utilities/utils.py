@@ -79,7 +79,6 @@ def handle_first_param(first, number):
     if number < first:
         return number, 0
     
-
     return 100, (number - first)
 
 def get_data(url, params, headers, number, after=None, data={"data": []}, first=100):
@@ -107,14 +106,6 @@ def get_data(url, params, headers, number, after=None, data={"data": []}, first=
 
     return get_data(url, params, headers, number, after=after, data=data)
 
-def sort_dict_by_name(games):
-    sorted_games = dict(sorted(games.items(), key=lambda x:x[1]['name']))
-    return sorted_games
-
 def create_dict_from_vars(**kwargs):
     params = {key: value for key, value in kwargs.items() if value is not None}
     return params
-
-def generate_random_id():
-    random_id = random.randint(100000, 999999)
-    return str(random_id)

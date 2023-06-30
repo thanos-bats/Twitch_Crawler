@@ -26,14 +26,10 @@ def handle_messages(irc, crawling_id):
                     modified_message = modify_message(crawling_id, msg)
                     if modified_message:
                         socketio.emit('message', modified_message)
-                else:
-                    print(">>: "+ msg)
             
             stop_flag = getattr(threading.current_thread(), "stop_flag", False)
         except Exception as e:
             break
-
-        
 
 def modify_message(crawling_id, data):
     pattern = r":(?P<username>[^!]+)![^#]+#(?P<streamer>[^\s]+)\s*:(?P<message>.*)"

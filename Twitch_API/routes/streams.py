@@ -4,6 +4,7 @@ from services.streams import get_streams, retrieve_comments_start, retrieve_comm
 from routes import streams_bp
 from utilities.utils import get_error_message
 
+# Returns a list of live streams for a specific game id or a user id
 @streams_bp.route('/', methods=['GET'])
 def get_game_streams():
     game_id = request.args.get('game_id')
@@ -16,6 +17,7 @@ def get_game_streams():
     data, status_code = get_streams(game_id, number_of_results, user_id, request.path)
     return jsonify(data), status_code
 
+# Starts retrieving comments for a list of live streams
 @streams_bp.route('/comments/start', methods=['POST'])
 def start_comments_handler():
     data = request.get_json()
@@ -26,6 +28,7 @@ def start_comments_handler():
     response_data, status_code = retrieve_comments_start(data.get('id'), data.get('streamers'))
     return jsonify(response_data), status_code
 
+# Stops retrieving comments for a crawling id
 @streams_bp.route('/comments/stop', methods=['POST'])
 def stop_comments_handler():
     data = request.get_json()

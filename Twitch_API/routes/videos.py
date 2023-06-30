@@ -4,6 +4,7 @@ from services.videos import get_videos
 from routes import videos_bp
 from utilities.utils import get_error_message
 
+# Returns a list of Vods that match the given twitch game id or user id
 @videos_bp.route('/', methods=['GET'])
 def get_game_videos():
     game_id = request.args.get('game_id')

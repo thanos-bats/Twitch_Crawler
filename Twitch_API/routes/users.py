@@ -4,6 +4,7 @@ from flask import jsonify, request
 from utilities.utils import get_error_message
 from services.users import get_user
 
+# Returns the user details based on the twitch username or id
 @users_bp.route('/', methods=['GET'])
 def search_user():
     user_name = request.args.get('user_name')

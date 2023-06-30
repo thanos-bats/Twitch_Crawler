@@ -1,6 +1,4 @@
-import re
-import pymongo
-from utilities.utils import get_dotenv, make_request, save_dict_to_json, sort_dict_by_name, create_dict_from_vars
+from utilities.utils import get_dotenv, make_request, save_dict_to_json, create_dict_from_vars
 from utilities.db_utils import multiple_update_db, get_exact_match, get_text_index
 
 def search_games_by_keyword(keyword, limit):
@@ -10,15 +8,12 @@ def get_games(after, games):
     client_id, access_token, base_url, _ = get_dotenv()
     endpoint = "games/top"
     url = f"{base_url}/{endpoint}"
-
     params = {"first": 100}
-
     headers = {
         "Client-ID": client_id,
         "Authorization": f"Bearer {access_token}"
     }
-    if after is None:
-        print('I m in get games')
+
     if after is not None:
         params["after"] = after
 
@@ -26,6 +21,7 @@ def get_games(after, games):
 
     if (status_code == 500) and (not games["data"]):
         print(f'{response}')
+        return
 
     if response['data']:
         json_data = response['data']
@@ -46,4 +42,5 @@ def get_games(after, games):
 def get_game_search(game_id):
     query = create_dict_from_vars(id=game_id)
     result = get_exact_match(query)
+    
     return result

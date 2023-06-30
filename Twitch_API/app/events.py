@@ -1,4 +1,4 @@
-from .extensions import socketio
+from .socketio import socketio
 
 @socketio.on("connect")
 def handle_connect():

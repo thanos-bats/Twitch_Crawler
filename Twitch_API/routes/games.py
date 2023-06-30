@@ -4,6 +4,7 @@ from services.games import search_games_by_keyword, get_game_search
 from routes import games_bp
 from utilities.utils import get_error_message
 
+# Returns a list of games that match the given keyword phrase/word
 @games_bp.route('/', methods=['GET'])
 def search_games():
     keyword = request.args.get('keyword')
@@ -14,6 +15,7 @@ def search_games():
 
     return jsonify(search_games_by_keyword(keyword, min(number, 100)))
 
+# Retuns a game based on the games id
 @games_bp.route('/search', methods=['GET'])
 def search_game():
     game_id = request.args.get('game_id')

@@ -1,6 +1,4 @@
 import pymongo
-from bson import json_util
-import json
 from utilities.utils import db_config
 
 clientName, db_name, collection_name = db_config()

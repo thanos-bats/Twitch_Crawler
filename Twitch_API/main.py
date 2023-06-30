@@ -3,7 +3,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from services.games import get_games
 import threading
 
-
 app = create_app()
 
 scheduler = BackgroundScheduler()
