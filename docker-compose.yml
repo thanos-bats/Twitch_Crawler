@@ -24,7 +24,7 @@ services:
     build:
       context: ./Twitch_API
       dockerfile: Dockerfile
-    image: certh/m4d/api:1.6
+    image: certh/m4d/api:2.1
     ports:
       - 3000:3000
     container_name: twitch_api
