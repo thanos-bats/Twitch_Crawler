@@ -29,10 +29,8 @@ MONGO_COLLECTION_NAME=games
 
 HOST_TWITCH=irc.chat.twitch.tv
 PORT_TWITCH=667
+```
 
 4. Create another .env file in the Twitch_Ctrl directory with the following contents:
-```plaintext
-SOCKET_URL=http://localhost:3000
-5. Run in a command line:
-```plaintext
-docker-compose up
+`SOCKET_URL=http://localhost:3000`
+5. Run in a command line: `docker-compose up`
