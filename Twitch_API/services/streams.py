@@ -71,7 +71,7 @@ def retrieve_comments_start(crawling_id, channels):
         'channels': channels,
         'message': 'Connection started successfully'
     }
-    return response_data, 201
+    return response_data, 200
 
 def retrieve_comments_stop(crawling_id):
     irc = irc_connections.get(crawling_id)
@@ -88,7 +88,7 @@ def retrieve_comments_stop(crawling_id):
             'id': crawling_id,
             'message': 'Connection stoped successfully'
         }
-        return response_data, 201
+        return response_data, 200
     else:
         response_data = {
             "id": crawling_id,

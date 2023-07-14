@@ -20,7 +20,7 @@ def handle_messages(irc, crawling_id):
             for msg in data.strip().split("\n"):
                 if "PING" in msg:
                     send_command(irc, "PONG tmi.twitch.tv")
-                elif "JOIN" in msg:
+                elif ("JOIN" in msg) and not ("PRIVMSG" in msg):
                     print(f'> {msg}')
                 elif "PRIVMSG" in msg:
                     modified_message = modify_message(crawling_id, msg)
