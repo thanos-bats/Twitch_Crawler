@@ -34,3 +34,7 @@ PORT_TWITCH=667
 4. Create another .env file in the Twitch_Ctrl directory with the following contents:
 `SOCKET_URL=http://localhost:3000`
 5. Run in a command line: `docker-compose up`
+
+## Postman Collectio
+[Download Postman Collection](./TWITCH_CRAWLER.postman_collection)
+
