@@ -35,6 +35,4 @@ PORT_TWITCH=667
 `SOCKET_URL=http://localhost:3000`
 5. Run in a command line: `docker-compose up`
 
-## Postman Collectio
-[Download Postman Collection](./TWITCH_CRAWLER.postman_collection)
 
