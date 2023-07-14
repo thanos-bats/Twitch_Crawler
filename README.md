@@ -18,8 +18,8 @@ To install and set up Twitch Crawler, follow these steps:
 3. Create a `.env` file in the root directory with the following contents:
 
 ```plaintext
-CLIENT_ID=kt2stxc5suufpa6mrldardd9fjdlff
-ACCESS_TOKEN=lvssaptcyd6xpjmh1ep9xc2fmjkijm
+CLIENT_ID=your client Id
+ACCESS_TOKEN=your access token
 BASE_URL=https://api.twitch.tv/helix
 IGDB_URL=https://api.igdb.com/v4
 
@@ -29,3 +29,10 @@ MONGO_COLLECTION_NAME=games
 
 HOST_TWITCH=irc.chat.twitch.tv
 PORT_TWITCH=667
+
+4. Create another .env file in the Twitch_Ctrl directory with the following contents:
+```plaintext
+SOCKET_URL=http://localhost:3000
+5. Run in a command line:
+```plaintext
+docker-compose up
