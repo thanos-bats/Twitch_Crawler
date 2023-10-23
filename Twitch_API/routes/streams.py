@@ -10,11 +10,12 @@ def get_game_streams():
     game_id = request.args.get('game_id')
     number_of_results = int(request.args.get('number_of_results', 50))
     user_id = request.args.get('user_id', None)
+    language = request.args.get('language', None)
 
     if not game_id and not user_id:
         return get_error_message('game_id or user_id')
 
-    data, status_code = get_streams(game_id, number_of_results, user_id, request.path)
+    data, status_code = get_streams(game_id, number_of_results, user_id, language, request.path)
     return jsonify(data), status_code
 
 # Starts retrieving comments for a list of live streams
