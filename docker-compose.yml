@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 services:
   twitch_db:
     image: mongo:6.0
@@ -24,7 +24,7 @@ services:
     build:
       context: ./Twitch_API
       dockerfile: Dockerfile
-    image: certh/m4d/api:2.1
+    image: certh/m4d/api:3.1
     ports:
       - 3000:3000
     container_name: twitch_api
@@ -39,7 +39,7 @@ services:
     build:
       context: ./Twitch_Ctrl
       dockerfile: Dockerfile
-    image: certh/m4d/ctrl:2.3
+    image: certh/m4d/ctrl:2.2
     container_name: twitch_ctrl
     depends_on:
       - twitch_api
