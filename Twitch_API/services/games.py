@@ -14,6 +14,8 @@ def get_games(after, games):
         "Authorization": f"Bearer {access_token}"
     }
 
+    if after is None:
+        print(headers)
     if after is not None:
         params["after"] = after
 

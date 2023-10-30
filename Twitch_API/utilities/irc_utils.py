@@ -11,6 +11,7 @@ def send_command(irc, command):
 def handle_messages(irc, crawling_id):
     stop_flag = getattr(threading.current_thread(), "stop_flag", False)
     
+    #while not stop_event.is_set():
     while not stop_flag:
         try:
             data = irc.recv(2048).decode()
