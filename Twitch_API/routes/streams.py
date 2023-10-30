@@ -12,8 +12,8 @@ def get_game_streams():
     user_id = request.args.get('user_id', None)
     language = request.args.get('language', None)
 
-    if not game_id and not user_id:
-        return get_error_message('game_id or user_id')
+    if not game_id and not user_id and not language:
+        return get_error_message('game_id or user_id or language')
 
     data, status_code = get_streams(game_id, number_of_results, user_id, language, request.path)
     return jsonify(data), status_code
