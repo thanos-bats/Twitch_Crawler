@@ -102,7 +102,10 @@ def get_data(url, params, headers, number, after=None, data={"data": []}, first=
     if number == 0:
         return data, status_code
     
-    after = json_data["pagination"]["cursor"]
+    if "cursor" in json_data["pagination"]:
+        after = json_data["pagination"]["cursor"]
+    else:
+        after = None
 
     return get_data(url, params, headers, number, after=after, data=data)
 
