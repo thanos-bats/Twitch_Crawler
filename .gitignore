@@ -6,5 +6,4 @@
 
 mongo/data/*
 /Twitch_API/twitch_results/*
-/Twitch_API/test.py
 docker-compose.yml
