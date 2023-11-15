@@ -14,17 +14,17 @@ services:
       context: ./Init_DB
       dockerfile: Dockerfile
     container_name: init_twitch_db
-    image: certh/m4d/init:1.0
+    image: certh/m4d/init:1.1
     depends_on:
       - twitch_db
     environment:
-      - MONGO_DB=mongodb://twitch_db:27017/
+      - MONGO_DB=twitch_db:27017
 
   twitch_api:
     build:
       context: ./Twitch_API
       dockerfile: Dockerfile
-    image: certh/m4d/api:3.2
+    image: certh/m4d/api:3.3
     ports:
       - 3000:3000
     container_name: twitch_api
