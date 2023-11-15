@@ -7,6 +7,8 @@ def db_config():
     load_dotenv()
     db_client = os.getenv("MONGO_DB")
     print(f'The mongo client is {db_client}')
+    db_client = db_client.replace("mongodb://", "")
+    print(f'The mongo client is new {db_client}')
     db_name = os.getenv("MONGO_DB_NAME")
     collection_name = os.getenv("MONGO_COLLECTION_NAME")
     return db_client, db_name, collection_name
@@ -38,5 +40,3 @@ result = insert_many(load_dict_from_file('igdb_games.json'))
 print(f'the result is {len(result)}')
 
 create_text_index()
-
-
