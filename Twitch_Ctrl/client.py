@@ -24,6 +24,7 @@ def handle_message(data):
 def start_client():
     try:
         socket.connect(os.getenv('SOCKET_URL'))
+        socket.wait()
     except Exception as e:
         print('> Error connecting: ', e)
 
