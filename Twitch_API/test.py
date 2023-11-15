@@ -1,9 +1,12 @@
 import time
 import os
 import json
-from utilities.utils import get_dotenv, get_data, create_dict_from_vars
+from utilities.utils import *
 from utilities.irc_utils import *
 from flask import jsonify
+import requests
+import json
+import random
 
 game_ids = [509658, 23020, 33214, 510218, 497497]
 minecraft_ids = [27471, 512663, 290655618, 1900455944, 509725, 1374264548, 437143927, 1094371038, 1594527138, 1175133722, 1817240123, 490130, 1078970694]
@@ -16,7 +19,6 @@ stumble_guys = 1312214340
 
 languages = ['el']
 number_of_results = 50
-endpoint = '/streams'
 
 def get_streams(game_id, number_of_results, user_id, language, endpoint):
     client_id, access_token, base_url, _ = get_dotenv()
@@ -39,15 +41,15 @@ def get_streams(game_id, number_of_results, user_id, language, endpoint):
 
     return response_data, response_status
 
-def make_api_calls():
+def make_api_calls(game_ids):
     try:
-        for game_id in game_ids + minecraft_ids + lego_ids + fifa_ids + football_manager_ids:
+        for game_id in game_ids:
             for language in languages:
-                response_data, response_status = get_streams(game_id, number_of_results, None, language, endpoint)
+                response_data, response_status = get_streams(game_id, number_of_results, None, language, "/streams")
 
                 if response_status == 200:
                     if len(response_data['data']) == 0:
-                        #print(f'the game {game_id} has no data for language {language}')
+                        # print(f'the game {game_id} has no data for language {language}')
                         continue
                     
                     process_streams(response_data, game_id, language)
@@ -61,7 +63,7 @@ def make_api_calls():
 def get_greek_streams():
     # try:
         for language in languages:
-            response_data, response_status = get_streams(None, 300, None, language, endpoint)
+            response_data, response_status = get_streams(None, 300, None, language, '/streams')
             print(len(response_data), response_status)
             if response_status == 200:
                 if len(response_data['data']) == 0:
@@ -77,22 +79,89 @@ def get_greek_streams():
     #     print(f'An error occurred: {str(e)}')
 
 def process_streams(streams_data, game_id, language):
-    # Define the base directory
-    # Ensure that the 'twitch_results' directory exists
-    base_directory = 'twitch_results'
-    os.makedirs(base_directory, exist_ok=True)
+    flag_terms = ["girl", "boy", "daddy", "chat", "chill", "relax", "χαλαρ"]
 
-    timestamp = time.strftime("%d%m-%H%M")
-    file_name = f"{timestamp}_{game_id}_{language}.json"
+    # Filter streams based on tags
+    filtered_streams = [
+        stream for stream in streams_data.get("data", [])
+        if stream.get('tags') and any(flag.lower() in ' '.join(map(str.lower, stream['tags'])) for flag in flag_terms)
+    ]
+    
+    if filtered_streams:
+        print('Starting crawling')
+        start_crawling(filtered_streams)
+    else:
+        print('No filtered streams to save.')
 
-    file_path = os.path.join(base_directory, file_name)
+def start_crawling(filtered_streams):
+    api_url = "http://localhost:3000/streams/comments/start"
+    headers = {"Content-Type": "application/json"}
+    streamer_names = []
+    random_id = str(random.randint(1, 1000))
 
-    print(f'the file {file_name} saved')
+    for stream in filtered_streams:
+        streamer_name = stream.get('user_login', '')
+        
+        if streamer_name not in started_crawling_streamers:
+            streamer_names.append(streamer_name)
+            started_crawling_streamers[streamer_name] = random_id
+        else:
+           print(f"The streamer {streamer_name} is already crawled") 
 
-    with open(file_path, "w", encoding="utf-8") as json_file:
-        json.dump(streams_data, json_file, ensure_ascii=False, indent=4)
+    payload = {
+        "streamers": streamer_names,
+        "id":  random_id
+    }
 
+    try:
+        response = requests.post(api_url, json=payload, headers=headers)
+
+        if response.status_code // 100 == 2:
+            print("Successfully started comments for all streamers")
+            print(response.text)
+        else:
+            print(f"Failed to start comments. Status code: {response.status_code}")
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error making API request: {str(e)}")
+
+def get_ids_by_keyword(keyword):
+    url = "http://localhost:3000/games"
+    params = {"keyword": keyword}
+    headers = {"Content-Type": "application/json"}
+
+    response_data, status_code = make_request(url, params, headers)
+    if status_code == 200:
+        i = 0
+        for game in response_data['data']['data']:
+            if game.get('score', 0) >= 0.75:
+                i += 1
+
+        print(f"Total games with score >= 0.75 (using loop): {i}")
+
+        result_list = [item['id'] for item in response_data['data']['data'] if item.get('score', 0) >= 0.75]
+
+        print(f"Total games with score >= 0.75 (using list comprehension): {len(result_list)}")
+        return result_list
+    
+    return response_data
+
+keywords = ['fortnite', 'Minecraft', 'Stardoll', 'Roblox', 'Fall Guys', 'Rocket league', 'sims', 'fifa', 'NBA', 'just chatting', 'League of Legends', 'Brawl Stars']
+keywords = ['just chatting', 'league of legends']
+game_ids = [id for keyword in keywords for id in get_ids_by_keyword(keyword)]
+flag_terms = [
+        "girl",
+        "boy",
+        "daddy",
+        "chat",
+        "chill",
+        "relax",
+        "χαλαρ"
+    ]
+
+started_crawling_streamers = {}
 while True:
-    #make_api_calls()
-    get_greek_streams()
+    make_api_calls(game_ids)
+    print(started_crawling_streamers)
+
     time.sleep(3600)

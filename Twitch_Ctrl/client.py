@@ -1,11 +1,12 @@
 import os
+import json
 from socketio.client import Client
 from dotenv import load_dotenv
 
 load_dotenv()
 
 socket = Client()
-messages = []
+messages = {}
 
 @socket.on('connect')
 def handle_connect():
@@ -19,7 +20,15 @@ def handle_disconnect():
 @socket.on('message')
 def handle_message(data):
     print(data)
-    messages.append(data)
+    streamer_name = data.get('streamer', 'unknown_streamer')
+
+    if streamer_name not in messages:
+        messages[streamer_name] = []
+
+    messages[streamer_name].append(data)
+    
+    # Save messages to a JSON file
+    save_messages_to_file(streamer_name)
 
 def start_client():
     try:
@@ -28,6 +37,14 @@ def start_client():
     except Exception as e:
         print('> Error connecting: ', e)
 
+def save_messages_to_file(streamer_name):
+    dir_path = os.path.join(os.getcwd(), 'streamer_messages')
+    os.makedirs(dir_path, exist_ok=True)
+
+    file_path = os.path.join(dir_path, f'{streamer_name}_messages.json')
+
+    with open(file_path, 'w') as json_file:
+        json.dump(messages[streamer_name], json_file, indent=4)
 
 if __name__ == '__main__':
     start_client()
