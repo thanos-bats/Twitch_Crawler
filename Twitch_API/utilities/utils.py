@@ -53,12 +53,17 @@ def make_request(url, params, headers):
         return response_data, 200
     
     except requests.exceptions.RequestException as e:
-        # Handle request exceptions (e.g., network error, connection timeout)
-        error_data = {
-        'status': 'Error',
-        'message': str(e)
-        }
-        return error_data, 500
+        if hasattr(e, 'response') and e.response is not None:
+            error_data = e.response.json()
+            status_code = e.response.status_code
+        else:
+            error_data = {
+                'status': 'Error',
+                'message': str(e)
+            }
+            status_code = 500
+
+        return error_data, status_code
     
     except ValueError as e:
         error_data = {
