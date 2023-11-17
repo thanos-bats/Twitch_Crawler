@@ -5,13 +5,15 @@ from dotenv import load_dotenv
 
 def db_config():
     load_dotenv()
-    db_client = os.getenv("MONGO_DB")
-    print(f'The mongo client is {db_client}')
-    db_client = db_client.replace("mongodb://", "")
-    print(f'The mongo client is new {db_client}')
+    db_uri = os.getenv("MONGO_DB")
     db_name = os.getenv("MONGO_DB_NAME")
     collection_name = os.getenv("MONGO_COLLECTION_NAME")
-    return db_client, db_name, collection_name
+
+    # Check if the URI starts with 'mongodb://' or 'mongodb+srv://'
+    if not db_uri.startswith("mongodb://") and not db_uri.startswith("mongodb+srv://"):
+        raise ValueError("Invalid MongoDB URI. Must start with 'mongodb://' or 'mongodb+srv://'")
+
+    return db_uri, db_name, collection_name
 
 def load_dict_from_file(filename):
     try:
