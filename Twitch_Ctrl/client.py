@@ -38,13 +38,15 @@ def start_client():
         print('> Error connecting: ', e)
 
 def save_messages_to_file(streamer_name):
-    dir_path = os.path.join(os.getcwd(), 'streamer_messages')
-    os.makedirs(dir_path, exist_ok=True)
+    parent_folder = os.path.abspath(os.path.join(os.getcwd(), os.pardir))  # Get the parent folder
 
-    file_path = os.path.join(dir_path, f'{streamer_name}_messages.json')
+    messages_folder = os.path.join(parent_folder, 'data', 'messages')
+    os.makedirs(messages_folder, exist_ok=True)
+
+    file_path = os.path.join(messages_folder, f'{streamer_name}_messages.json')
 
     with open(file_path, 'w') as json_file:
         json.dump(messages[streamer_name], json_file, indent=4)
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
     start_client()
