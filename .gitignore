@@ -7,4 +7,4 @@
 mongo/data/*
 /Twitch_API/twitch_results/*
 docker-compose.yml
-/Twitch_Ctrl/streamer_messages/*
+data/*
