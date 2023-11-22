@@ -68,7 +68,9 @@ def start_crawling(filtered_streams):
             started_crawling_streamers[streamer_name] = random_id
         else:
             print(f"The streamer {streamer_name} is already crawled")
-            streamers_data[streamer_name]['tags'].update(tags)
+            # Convert the list to a set, update it, and convert it back to a list
+            streamers_data[streamer_name]['tags'] = list(set(streamers_data[streamer_name]['tags']).union(tags))
+
             streamers_data[streamer_name]['titles'].add(title)
 
     if streamer_names:
@@ -103,8 +105,15 @@ def save_streamers_data_to_file(streamers_data):
 
     file_path = os.path.join(data_folder, 'streamers_data.json')
 
+    existing_data = {}
+    if os.path.exists(file_path):
+        with open(file_path, 'r', encoding='utf-8') as json_file:
+            existing_data = json.load(json_file)
+
+    existing_data.update(streamers_data)
+
     with open(file_path, 'w', encoding='utf-8') as json_file:
-        json.dump(streamers_data, json_file, indent=2, ensure_ascii=False)
+        json.dump(existing_data, json_file, indent=2, ensure_ascii=False)
 
 def get_ids_by_keyword(keyword):
     url = "http://localhost:3000/games"
