@@ -5,7 +5,7 @@ import random
 import string
 import threading
 
-def get_streams(game_id, number_of_results, user_id, language, endpoint):
+def get_streams(game_id, number_of_results, user_id, user_login, language, endpoint):
     client_id, access_token, base_url, _ = get_dotenv()
     url = f"{base_url}{endpoint}"
     headers = {
@@ -13,7 +13,7 @@ def get_streams(game_id, number_of_results, user_id, language, endpoint):
         "Authorization": f"Bearer {access_token}"
     }
     
-    params = create_dict_from_vars(game_id=game_id, user_id=user_id, language=language)
+    params = create_dict_from_vars(game_id=game_id, user_id=user_id, user_login=user_login, language=language)
     response_data, response_status = get_data(url, params, headers, number_of_results, None, {"data": []})
 
     if response_status != 200:
