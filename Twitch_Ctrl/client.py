@@ -46,7 +46,7 @@ def save_messages_to_file(streamer_name):
     file_path = os.path.join(messages_folder, f'{streamer_name}_messages.json')
     
     with open(file_path, 'w', encoding='utf-8') as json_file:
-        json.dump(messages[streamer_name], json_file, indent=4)
+        json.dump(messages[streamer_name], json_file, indent=4, ensure_ascii=False)
 
 if __name__ == '__main__': 
     start_client()
