@@ -19,7 +19,6 @@ def get_streams_data(game_ids):
             # Extract a chunk of game IDs
             chunk = game_ids[i:i+chunk_size]
             game_ids_param = ','.join(map(str, chunk))
-            print(f"Starting searching for {len(game_ids_param)} game ids")
 
             for language in languages:
                 response = requests.get(api_url, params={'game_id': game_ids_param, 'language': language}, headers=headers)
@@ -44,10 +43,10 @@ def filter_streams(streams_data):
     ]
     
     if filtered_streams:
-        print('Starting crawling for the filtered streams')
+        print(f'Starting crawling for {len(filtered_streams)} filtered streams')
         start_crawling(filtered_streams)
     else:
-        print('No filtered streams to save.')
+        print('There are no streams to save based on the keywords.')
 
 def start_crawling(filtered_streams):
     api_url = "http://localhost:3000/streams/comments/start"
@@ -63,7 +62,7 @@ def start_crawling(filtered_streams):
         title = stream.get('title', '')
         
         if streamer_name not in started_crawling_streamers:
-            print(f"I m starting crawling for the streamer {streamer_name} for the game {stream.get("game_name")}")
+            print(f"Starting crawling for the streamer {streamer_name} for the game {stream.get("game_name")}")
             streamers_data[streamer_name] = {'tags': set(tags), 'titles': set([title])}
             streamer_names.append(streamer_name)
             started_crawling_streamers[streamer_name] = random_id
