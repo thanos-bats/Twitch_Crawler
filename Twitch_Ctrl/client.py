@@ -21,15 +21,24 @@ def handle_message(data):
 
     file_path = get_file_path(streamer_name)
     streamer_messages = load_existing_messages(file_path)
-    streamer_messages.append(data)
 
-    save_messages_to_file(file_path, streamer_messages)
-
+    if streamer_messages is not None:
+        streamer_messages.append(data)
+        save_messages_to_file(file_path, streamer_messages)
+    else:
+        # Handle the case where loading messages fails
+        print(f"Failed to load existing messages for {streamer_name}")
+   
 def load_existing_messages(file_path):
     if os.path.exists(file_path):
-        with open(file_path, 'r', encoding='utf-8') as json_file:
-            return json.load(json_file)
+        try:
+            with open(file_path, 'r', encoding='utf-8') as json_file:
+                return json.load(json_file)
+        except json.JSONDecodeError as e:
+            print(f"JSONDecodeError: {e}")
+            return None
     else:
+        print(f"File not found: {file_path}")
         return []
 
 def get_file_path(streamer_name):
