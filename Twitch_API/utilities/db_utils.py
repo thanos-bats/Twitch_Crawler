@@ -1,5 +1,5 @@
 import pymongo
-from utilities.utils import db_config
+from utilities.utils import db_config, calculate_similarity
 
 clientName, db_name, collection_name = db_config()
 client = pymongo.MongoClient(clientName)
@@ -38,9 +38,21 @@ def get_exact_match(query):
     return {"data": [result]} 
 
 def get_text_index(keyword, limit):
-    result = collection.find(
-        {"$text": {"$search": keyword}},
-        {"score": {"$meta": "textScore"}, "_id": 0}
-    ).sort([("score", {"$meta": "textScore"})]).limit(limit)
+    # result = collection.find(
+    #     {"$text": {"$search": keyword}},
+    #     {"score": {"$meta": "textScore"}, "_id": 0}
+    # ).sort([("score", {"$meta": "textScore"})]).limit(limit)
     
-    return {"data": list(result)} 
+    
+    regex_pattern = f".*{keyword}.*"
+    cursor = collection.find({"name": {"$regex": regex_pattern, "$options": "i"}}).limit(limit)
+    results = [(calculate_similarity(keyword, doc["name"]), doc) for doc in cursor]
+    sorted_results = sorted(results, key=lambda x: x[0], reverse=True)
+
+    final_results = []
+    for score, doc in sorted_results:
+        doc['score'] = score
+        del doc['_id']
+        final_results.append(doc)
+
+    return {"data": final_results}
