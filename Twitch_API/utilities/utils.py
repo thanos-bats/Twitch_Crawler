@@ -115,6 +115,21 @@ def get_data(url, params, headers, number, after=None, data={"data": []}, first=
 
     return get_data(url, params, headers, number, after=after, data=data)
 
+def get_data_paginated(url, params, headers, number, after=None, data={"data": []}, first=100):
+    params["first"], number = handle_first_param(first, number)
+    if after is not None:
+        params["after"] = after
+    print(params)
+    print(headers)
+    response, status_code = make_request(url, params, headers)
+
+    if status_code != 200 and (not data["data"]): # If there is an error, we return the error
+        return response, status_code
+
+    json_data = response['data']
+    
+    return json_data, status_code
+
 def create_dict_from_vars(**kwargs):
     params = {key: value for key, value in kwargs.items() if value is not None}
     return params

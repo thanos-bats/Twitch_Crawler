@@ -1,11 +1,11 @@
-from utilities.utils import get_dotenv, get_data, create_dict_from_vars
+from utilities.utils import get_dotenv, get_data, create_dict_from_vars, get_data_paginated
 from utilities.irc_utils import *
 import socket
 import random
 import string
 import threading
 
-def get_streams(game_id, number_of_results, user_id, user_login, language, endpoint):
+def get_streams(game_id, number_of_results, user_id, user_login, language,cursor, endpoint):
     client_id, access_token, base_url, _ = get_dotenv()
     url = f"{base_url}{endpoint}"
     headers = {
@@ -14,7 +14,7 @@ def get_streams(game_id, number_of_results, user_id, user_login, language, endpo
     }
     
     params = create_dict_from_vars(game_id=game_id, user_id=user_id, user_login=user_login, language=language)
-    response_data, response_status = get_data(url, params, headers, number_of_results, None, {"data": []})
+    response_data, response_status = get_data_paginated(url, params, headers, number_of_results, cursor, {"data": []})
 
     if response_status != 200:
         return response_data, response_status
