@@ -4,6 +4,7 @@ from flask import jsonify
 import os
 from dotenv import load_dotenv
 import requests
+from fuzzywuzzy import fuzz
 import random
 
 def get_error_message(param):
@@ -117,3 +118,6 @@ def get_data(url, params, headers, number, after=None, data={"data": []}, first=
 def create_dict_from_vars(**kwargs):
     params = {key: value for key, value in kwargs.items() if value is not None}
     return params
+
+def calculate_similarity(query, target):
+    return fuzz.ratio(query, target)
