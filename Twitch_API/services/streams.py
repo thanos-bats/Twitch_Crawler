@@ -26,52 +26,6 @@ def get_streams(game_id, number_of_results, user_id, user_login, language,cursor
 
     return response_data, response_status
 
-irc_connections = {}
-irc_threads = {}
-def retrieve_comments_start(crawling_id, channels):
-    if crawling_id in irc_connections.keys():
-        response_data = {
-            'id': crawling_id,
-            'message': 'The id already exists'
-        }
-        return response_data, 400
-    
-    HOST = 'irc.chat.twitch.tv'
-    PORT = 6667
-
-    oauth_token = 'oauth:' + ''.join(random.choices(string.ascii_letters + string.digits, k=30))    # 'oauth:u800sfpa0b6nuaqsyg7queipflza5e'
-    username = 'justinfan' + str(random.randint(1, 999))
-
-    irc = socket.socket()
-    irc.connect((HOST, PORT))
-    send_command(irc, f'PASS {oauth_token}')
-    send_command(irc, f'NICK {username}')
-
-    for channel in channels:
-        send_command(irc, f'JOIN #{channel}')
-
-    resp =  irc.recv(2048).decode()
-    if 'failed' in resp:
-        response_data = {
-            'id': crawling_id,
-            'message': resp
-        }
-        return response_data, 404
-    
-    irc_thread = threading.Thread(target=handle_messages, args=(irc, crawling_id))
-    irc_thread.start()
-    
-
-    irc_threads[crawling_id] = irc_thread
-    irc_connections[crawling_id] = irc
-
-    response_data = {
-        'id': crawling_id,
-        'channels': channels,
-        'message': 'Connection started successfully'
-    }
-    return response_data, 200
-
 def retrieve_comments_stop(crawling_id):
     irc = irc_connections.get(crawling_id)
     irc_thread = irc_threads.get(crawling_id)
@@ -95,3 +49,48 @@ def retrieve_comments_stop(crawling_id):
         }
         return response_data, 404
     
+irc_connections = {}
+irc_threads = {}
+def retrieve_comments_start(crawling_id, channels):
+    # The crawling id is the same with the Task id
+    if crawling_id in irc_connections.keys():
+        response_data = {
+            'id': crawling_id,
+            'message': 'The id already exists'
+        }
+        return response_data, 400
+    
+    HOST = 'irc.chat.twitch.tv'
+    PORT = 6667
+
+    oauth_token = 'oauth:' + ''.join(random.choices(string.ascii_letters + string.digits, k=30))    # 'oauth:u800sfpa0b6nuaqsyg7queipflza5e'
+    username = 'justinfan' + str(random.randint(1, 999))
+
+    irc = socket.socket()
+    irc.connect((HOST, PORT))
+    send_command(irc, f'PASS {oauth_token}')
+    send_command(irc, f'NICK {username}')
+    print(f"The channels are {channels}")
+    for channel, JobId in channels.items():
+        send_command(irc, f'JOIN #{channel}')
+
+    resp =  irc.recv(2048).decode()
+    if 'failed' in resp:
+        response_data = {
+            'id': crawling_id,
+            'message': resp
+        }
+        return response_data, 404
+    
+    irc_thread = threading.Thread(target=handle_messages, args=(irc, crawling_id, channels))
+    irc_thread.start()
+    
+    irc_threads[crawling_id] = irc_thread
+    irc_connections[crawling_id] = irc
+
+    response_data = {
+        'id': crawling_id,
+        'channels': channels,
+        'message': 'Connection started successfully'
+    }
+    return response_data, 200

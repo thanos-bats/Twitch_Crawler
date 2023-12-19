@@ -8,7 +8,7 @@ def send_command(irc, command):
     print(f'< {command}')
     irc.send((command + '\r\n').encode())
 
-def handle_messages(irc, crawling_id):
+def handle_messages(irc, crawling_id, channels=None):
     stop_flag = getattr(threading.current_thread(), "stop_flag", False)
     
     #while not stop_event.is_set():
@@ -26,7 +26,7 @@ def handle_messages(irc, crawling_id):
                 elif "PRIVMSG" in msg:
                     modified_message = modify_message(crawling_id, msg)
                     if modified_message:
-                        socketio.emit('message', modified_message)
+                        socketio.emit('message', { "data": modified_message, "channels": channels })
             
             stop_flag = getattr(threading.current_thread(), "stop_flag", False)
         except Exception as e:

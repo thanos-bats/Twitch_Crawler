@@ -2,6 +2,8 @@ import os
 import json
 from socketio.client import Client
 from dotenv import load_dotenv
+import requests
+
 
 load_dotenv()
 socket = Client()
@@ -16,18 +18,39 @@ def handle_disconnect():
 
 @socket.on('message')
 def handle_message(data):
-    print(data)
-    streamer_name = data.get('streamer', 'unknown_streamer')
+    # data's structure { "data": {Message info}, "channels": {"streamer name": "jobId"} }
+    modified_message = data.get('data')
+    channels = data.get('channels')
+    streamer_name = modified_message.get('streamer', 'unknown_streamer')
 
-    file_path = get_file_path(streamer_name)
-    streamer_messages = load_existing_messages(file_path)
-
-    if streamer_messages is not None:
-        streamer_messages.append(data)
-        save_messages_to_file(file_path, streamer_messages)
-    else:
-        # Handle the case where loading messages fails
-        print(f"Failed to load existing messages for {streamer_name}")
+    document_data = {
+        "jobId": channels.get(streamer_name),
+        "domainId": f"twitch:comment:{channels.get(streamer_name)}",
+        "title": modified_message.get("message"),
+        "content": modified_message.get("message"),
+        "source": "twitch",
+        "type": "twitch:comment",
+        "publishedAt": modified_message.get("created_at"),
+        "discoveredAt": modified_message.get("created_at")
+    }
+    entity_data = {
+        "domainId":f"twitch:profile:{channels.get(streamer_name)}",
+        "title":modified_message.get("username"),
+        "name":modified_message.get("username"),
+        "source":"twitch",
+        "type":"twitch:profile"
+    }
+    print(document_data)
+    # try:
+    #     create_document_response = requests.post(f"{os.getenv('NEO4J_URL')}/documents", json=document_data)
+    #     create_entity_response = requests.post(f"{os.getenv('NEO4J_URL')}/entities", json=entity_data)
+        
+    #     create_document_response.raise_for_status()
+    #     create_entity_response.raise_for_status()
+    # except requests.exceptions.RequestException as e:
+    #     print(f"Request failed: {e}")
+    # except Exception as e:
+    #     print(f"An unexpected error occurred: {e}")
    
 def load_existing_messages(file_path):
     if os.path.exists(file_path):
