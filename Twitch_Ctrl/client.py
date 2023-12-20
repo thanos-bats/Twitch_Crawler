@@ -28,30 +28,36 @@ def handle_message(data):
         "domainId": f"twitch:comment:{channels.get(streamer_name)}",
         "title": modified_message.get("message"),
         "content": modified_message.get("message"),
+        "raw": "{}",
         "source": "twitch",
         "type": "twitch:comment",
         "publishedAt": modified_message.get("created_at"),
-        "discoveredAt": modified_message.get("created_at")
+        "discoveredAt": modified_message.get("created_at"),
+        "lang": ""
     }
     entity_data = {
         "domainId":f"twitch:profile:{channels.get(streamer_name)}",
         "title":modified_message.get("username"),
         "name":modified_message.get("username"),
         "source":"twitch",
-        "type":"twitch:profile"
+        "type":"twitch:profile",
+        "discoveredAt": modified_message.get("created_at")
     }
     print(document_data)
-    # try:
-    #     create_document_response = requests.post(f"{os.getenv('NEO4J_URL')}/documents", json=document_data)
-    #     create_entity_response = requests.post(f"{os.getenv('NEO4J_URL')}/entities", json=entity_data)
+    try:
+        create_document_response = requests.post(f"{os.getenv('NEO4J_URL')}/documents/SocialMedia", json=document_data)
+        create_entity_response = requests.post(f"{os.getenv('NEO4J_URL')}/entities", json=entity_data)
         
-    #     create_document_response.raise_for_status()
-    #     create_entity_response.raise_for_status()
-    # except requests.exceptions.RequestException as e:
-    #     print(f"Request failed: {e}")
-    # except Exception as e:
-    #     print(f"An unexpected error occurred: {e}")
-   
+        create_document_response.raise_for_status()
+        create_entity_response.raise_for_status()
+
+        print("POST requests successful")
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+        print("Response Content:", e.response.content)
+    except Exception as e:
+        print(f"An unexpected error occurred: {e}")
+
 def load_existing_messages(file_path):
     if os.path.exists(file_path):
         try:
