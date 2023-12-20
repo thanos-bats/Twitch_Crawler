@@ -43,9 +43,17 @@ def save_dict_to_json(games, filename):
     with open(filename, 'w') as file:
         json.dump(games, file, indent=4)
 
-def make_request(url, params, headers):
+def make_request(url, params=None, headers=None, data=None, method="GET"):
     try:
-        response = requests.get(url, params=params, headers=headers)
+        if method.upper() == 'GET':
+            response = requests.get(url, params=params, headers=headers)
+        elif method.upper() == 'POST':
+            response = requests.post(url, json=data, headers=headers)
+        elif method.upper() == 'PATCH':
+            response = requests.patch(url, json=data, headers=headers)
+        else:
+            # Add more cases for other HTTP methods as needed
+            raise ValueError(f"Unsupported HTTP method: {method}")
         response.raise_for_status()
         response_data = {
         'status': 'Success',
