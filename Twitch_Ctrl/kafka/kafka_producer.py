@@ -29,7 +29,7 @@ class MessageProducer:
         self.producer.flush()
 
 # Example usage:
-producer = MessageProducer('your_kafka_bootstrap_servers')
-message_data = {'key1': 'value1', 'key2': 'value2'}
-producer.send_message('your_kafka_topic', message_data)
-producer.close_producer()
+# producer = MessageProducer('your_kafka_bootstrap_servers')
+# message_data = {'key1': 'value1', 'key2': 'value2'}
+# producer.send_message('your_kafka_topic', message_data)
+# producer.close_producer()

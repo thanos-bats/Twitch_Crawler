@@ -39,5 +39,7 @@ class MessageConsumer:
             self.consumer.close()
 
 # Example usage:
-consumer = MessageConsumer('your_kafka_bootstrap_servers', 'your_consumer_group_id')
-consumer.consume_messages('your_kafka_topic')
+bootstrap_servers = 'localhost:9092'
+topic = 'test_topic'
+consumer = MessageConsumer(bootstrap_servers, 'my_group')
+consumer.consume_messages(topic)
