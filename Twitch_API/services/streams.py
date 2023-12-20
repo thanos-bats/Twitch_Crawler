@@ -1,9 +1,10 @@
-from utilities.utils import get_dotenv, get_data, create_dict_from_vars, get_data_paginated
+from utilities.utils import *
 from utilities.irc_utils import *
 import socket
 import random
 import string
 import threading
+import os
 
 def get_streams(game_id, number_of_results, user_id, user_login, language,cursor, endpoint):
     client_id, access_token, base_url, _ = get_dotenv()
@@ -27,6 +28,7 @@ def get_streams(game_id, number_of_results, user_id, user_login, language,cursor
     return response_data, response_status
 
 def retrieve_comments_stop(crawling_id):
+    # The crawling id is the same with TaskId
     irc = irc_connections.get(crawling_id)
     irc_thread = irc_threads.get(crawling_id)
 
@@ -37,11 +39,16 @@ def retrieve_comments_stop(crawling_id):
         del irc_threads[crawling_id]
         del irc_connections[crawling_id]
 
+        response_message, status_code = update_statuses(crawling_id)
+        if status_code != 200:
+            response_data = response_message
+        
         response_data = {
             'id': crawling_id,
             'message': 'Connection stoped successfully'
         }
-        return response_data, 200
+        print(response_data)
+        return response_data, status_code
     else:
         response_data = {
             "id": crawling_id,
@@ -94,3 +101,29 @@ def retrieve_comments_start(crawling_id, channels):
         'message': 'Connection started successfully'
     }
     return response_data, 200
+
+def update_statuses(taskId):
+    neo4j_url = os.getenv("NEO4J_URL")
+    payload = {
+        "id": taskId, 
+        "status": "Completed"
+    }
+    res, status_code = make_request(f"{neo4j_url}/tasks", None, None,payload, "PATCH")
+    if res.get('status') != "Success" or status_code != 200:
+        return {'message': 'Failed to update task status', 'error': res}, status_code
+
+    res, status_code = make_request(f"{neo4j_url}/jobs",{"taskId": taskId}, None, None, "GET")
+    if res.get('status') != "Success" or status_code != 200:
+        return {'message': 'Failed to retrieve jobs', 'error': res}, status_code
+    
+    jobs = res.get('data')
+    for job in jobs:
+        payload = {
+            "id": job.get('id'),
+            "status": "Completed"
+        }
+        res, status_code = make_request(f"{neo4j_url}/jobs", None, None, payload, "PATCH")
+        if res.get('status') != "Success" or status_code != 200:
+            return {'message': f'Failed to update job status for job ID {job.get("id")}', 'error': res}, status_code
+
+    return {'message': 'All statuses updated successfully'}, 200
