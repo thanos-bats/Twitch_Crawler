@@ -3,7 +3,8 @@
 /Twitch_API/__pycache__/
 /Twitch_API/*/__pycache__/
 /Twitch_API/*.json
-/*/__pycache__
+/Twitch_Ctrl/*/__pycache__/
+
 mongo/data/*
 /Twitch_API/twitch_results/*
 docker-compose.yml
