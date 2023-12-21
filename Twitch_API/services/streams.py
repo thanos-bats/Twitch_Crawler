@@ -51,14 +51,14 @@ def retrieve_comments_stop(crawling_id):
         return response_data, status_code
     else:
         response_data = {
-            "id": crawling_id,
+            "taskId": crawling_id,
             'message': 'Connection not found. Please give a correct id'
         }
         return response_data, 404
     
 irc_connections = {}
 irc_threads = {}
-def retrieve_comments_start(crawling_id, channels):
+def retrieve_comments_start(crawling_id, channels, caseId):
     # The crawling id is the same with the Task id
     if crawling_id in irc_connections.keys():
         response_data = {
@@ -89,7 +89,7 @@ def retrieve_comments_start(crawling_id, channels):
         }
         return response_data, 404
     
-    irc_thread = threading.Thread(target=handle_messages, args=(irc, crawling_id, channels))
+    irc_thread = threading.Thread(target=handle_messages, args=(irc, crawling_id, channels, caseId))
     irc_thread.start()
     
     irc_threads[crawling_id] = irc_thread
