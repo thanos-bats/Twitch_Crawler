@@ -29,19 +29,18 @@ def get_game_streams():
 def start_comments_handler():
     data = request.get_json()
 
-    if not data.get('id') and not data.get('streamers'):
-        return get_error_message('id and streamers list')
+    if not data.get('taskId') and not data.get('streamers'):
+        return get_error_message('taskId and streamers list')
     
-    response_data, status_code = retrieve_comments_start(data.get('id'), data.get('streamers'))
+    response_data, status_code = retrieve_comments_start(data.get('taskId'), data.get('streamers'), data.get('caseId'))
     return jsonify(response_data), status_code
 
 # Stops retrieving comments for a crawling id
 @streams_bp.route('/comments/stop', methods=['POST'])
 def stop_comments_handler():
     data = request.get_json()
-
-    if not data.get('id'):
-        return get_error_message('id')
+    if not data.get('taskId'):
+        return get_error_message('taskId')
     
-    response_data, status_code = retrieve_comments_stop(data.get('id'))
+    response_data, status_code = retrieve_comments_stop(data.get('taskId'))
     return jsonify(response_data), status_code
