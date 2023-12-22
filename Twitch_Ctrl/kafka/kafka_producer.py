@@ -13,13 +13,8 @@ class MessageProducer:
             print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
 
     def send_message(self, topic, message_data):
-        message = {
-            'type': 'your_message_type',
-            'data': message_data
-        }
-
         # Convert the message to JSON
-        message_json = json.dumps(message)
+        message_json = json.dumps(message_data)
 
         # Send the JSON message to Kafka
         self.producer.produce(topic, value=message_json, callback=self.delivery_report)
