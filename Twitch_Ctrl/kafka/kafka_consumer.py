@@ -1,6 +1,9 @@
 from confluent_kafka import Consumer, KafkaError
 import json
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 class MessageConsumer:
     def __init__(self, bootstrap_servers, group_id):
         self.bootstrap_servers = bootstrap_servers
@@ -8,7 +11,7 @@ class MessageConsumer:
         self.consumer = Consumer({
             'bootstrap.servers': bootstrap_servers,
             'group.id': group_id,
-            'auto.offset.reset': 'earliest'
+            'auto.offset.reset': 'latest'
         })
 
     def consume_messages(self, topic):
@@ -39,7 +42,8 @@ class MessageConsumer:
             self.consumer.close()
 
 # Example usage:
-bootstrap_servers = 'localhost:9092'
-topic = 'test_topic'
+bootstrap_servers = os.getenv('BOOTSTRAP_SERVERS')
+topic = os.getenv('TOPIC_MESSAGE_DONE')
 consumer = MessageConsumer(bootstrap_servers, 'my_group')
+print(f"Starting consuming for server {bootstrap_servers} and topic {topic}")
 consumer.consume_messages(topic)
