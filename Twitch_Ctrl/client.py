@@ -1,14 +1,10 @@
 import os
-import uuid
 import json
 import datetime
 import requests
 
 from socketio.client import Client
 from dotenv import load_dotenv
-# import sys
-# sys.path.append(r'\Users\abatsioulas\Documents\Twitch_Crawler')
-# print(sys.path)
 from kafka.kafka_producer import MessageProducer
 
 load_dotenv()
@@ -36,9 +32,11 @@ class SocketClient:
             print('> Error connecting: ', e)
     
     def handle_message(self, data):
-        # data's structure { "data": {Message info}, "channels": {"streamer name": "jobId"} }
+        # data's structure { "data": {Message info}, "channels": {"streamer name": "jobId"}, "caseId": caseId, "taskId": taskId}
         modified_message = data.get('data')
         channels = data.get('channels')
+        caseId = data.get('caseId')
+        taskId = data.get('taskId')
         streamer_name = modified_message.get('streamer', 'unknown_streamer')
 
         document_data = {
@@ -54,7 +52,7 @@ class SocketClient:
             "lang": ""
         }
         entity_data = {
-            "domainId":f"twitch:profile:{channels.get(streamer_name)}",
+            "domainId":f"twitch:profile:{modified_message.get("username")}",
             "title":modified_message.get("username"),
             "name":modified_message.get("username"),
             "source":"twitch",
@@ -64,13 +62,8 @@ class SocketClient:
         print(f"Document data (before post request)> {document_data}")
 
         try:
-            # create_document_response = requests.post(f"{os.getenv('NEO4J_URL')}/documents/SocialMedia", json=document_data)
-            # create_entity_response = requests.post(f"{os.getenv('NEO4J_URL')}/entities", json=entity_data)
             create_document_response, document_response = make_request(f"{os.getenv('NEO4J_URL')}/documents/SocialMedia", None, None, document_data, "POST")
             create_entity_response, entity_response  = make_request(f"{os.getenv('NEO4J_URL')}/entities", None, None, entity_data, "POST")
-           
-            # create_document_response.raise_for_status()
-            # create_entity_response.raise_for_status()
 
             print("!!!POST requests successful!!")
             print(f'>the created document is {create_document_response}, and response {document_response}')
@@ -79,14 +72,13 @@ class SocketClient:
             topic, message = self.generate_message_tas_results(
                 datetime.datetime.utcnow().isoformat().split(".")[0] + 'Z',
                 streamer_name,
-                "test_caseId", 
-                "test_taskId", 
+                caseId, 
+                taskId, 
                 channels.get(streamer_name), 
                 create_document_response['data']['id'])
             self.producer.send_message(topic, message)
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")
-            print("Response Content:", e)
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
@@ -112,7 +104,6 @@ class SocketClient:
             }
         }
 
-
         return os.getenv("TOPIC_MESSAGE_DONE"), json.dumps(msg)
 
 def make_request(url, params=None, headers=None, data=None, method="GET"):
@@ -124,12 +115,12 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
         elif method.upper() == 'PATCH':
             response = requests.patch(url, json=data, headers=headers)
         else:
-            # Add more cases for other HTTP methods as needed
             raise ValueError(f"Unsupported HTTP method: {method}")
+        
         response.raise_for_status()
         response_data = {
         'status': 'Success',
-        'data': response.json()  # Assuming the response contains JSON data
+        'data': response.json()
         }
         return response_data, 200
     
@@ -156,4 +147,3 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
 if __name__ == '__main__':
     socket_client = SocketClient()
     socket_client.start()
-
