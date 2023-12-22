@@ -1,0 +1,17 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "streamers": {
+        "type": "object",
+        "properties": {
+          "mugi": { "type": "string" }
+        },
+        "additionalProperties": false,
+        "required": ["mugi"]
+      },
+      "taskid": { "type": "string" },
+      "caseId": { "type": "string" }
+    },
+    "required": ["streamers", "taskid", "caseId"]
+}
