@@ -39,16 +39,16 @@ def retrieve_comments_stop(crawling_id):
         del irc_threads[crawling_id]
         del irc_connections[crawling_id]
 
-        response_message, status_code = update_statuses(crawling_id)
-        if status_code != 200:
-            response_data = response_message
+        #response_message, status_code = update_statuses(crawling_id)
+        # if status_code != 200:
+        #     response_data = response_message
         
         response_data = {
             'id': crawling_id,
             'message': 'Connection stoped successfully'
         }
         print(response_data)
-        return response_data, status_code
+        return response_data, 200
     else:
         response_data = {
             "taskId": crawling_id,
