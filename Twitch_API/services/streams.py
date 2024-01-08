@@ -58,7 +58,8 @@ def retrieve_comments_stop(crawling_id):
     
 irc_connections = {}
 irc_threads = {}
-def retrieve_comments_start(crawling_id, channels, caseId):
+def retrieve_comments_start(caseId, crawling_id, channels):
+    
     # The crawling id is the same with the Task id
     if crawling_id in irc_connections.keys():
         response_data = {
@@ -77,10 +78,10 @@ def retrieve_comments_start(crawling_id, channels, caseId):
     irc.connect((HOST, PORT))
     send_command(irc, f'PASS {oauth_token}')
     send_command(irc, f'NICK {username}')
-    print(f"The channels are {channels}")
-    for channel, JobId in channels.items():
-        send_command(irc, f'JOIN #{channel}')
-
+    
+    for channel in channels:
+        send_command(irc, f'JOIN #{channel.get('streamerName')}')
+        
     resp =  irc.recv(2048).decode()
     if 'failed' in resp:
         response_data = {
