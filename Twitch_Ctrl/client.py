@@ -32,51 +32,52 @@ class SocketClient:
             print('> Error connecting: ', e)
     
     def handle_message(self, data):
-        # data's structure { "data": {Message info}, "channels": {"streamer name": "jobId"}, "caseId": caseId, "taskId": taskId}
-        modified_message = data.get('data')
+        # Data's structure { "data": {Message info}, "channels": [{"streamerName": Name, "jobId": id}], "caseId": caseId, "taskId": taskId}
+        msg_data = data.get('data')
+        streamer_name = msg_data.get('streamer', 'unknown_streamer')
         channels = data.get('channels')
         caseId = data.get('caseId')
         taskId = data.get('taskId')
-        streamer_name = modified_message.get('streamer', 'unknown_streamer')
+
+        for streamer_data in channels: 
+            if streamer_data.get('streamerName') == streamer_name:
+                jobId = streamer_data.get('jobId')
 
         document_data = {
-            "jobId": channels.get(streamer_name),
-            "domainId": f"twitch:comment:{channels.get(streamer_name)}",
-            "title": modified_message.get("message"),
-            "content": modified_message.get("message"),
+            "jobId": jobId,
+            "domainId": f"twitch:comment:{streamer_name}",
+            "title": msg_data.get("message"),
+            "content": msg_data.get("message"),
             "raw": "{}",
             "source": "twitch",
             "type": "twitch:comment",
-            "publishedAt": modified_message.get("created_at"),
-            "discoveredAt": modified_message.get("created_at"),
+            "publishedAt": msg_data.get("created_at"),
+            "discoveredAt": msg_data.get("created_at"),
             "lang": ""
         }
         entity_data = {
-            "domainId":f"twitch:profile:{modified_message.get("username")}",
-            "title":modified_message.get("username"),
-            "name":modified_message.get("username"),
+            "domainId":f"twitch:profile:{msg_data.get("username")}",
+            "title":msg_data.get("username"),
+            "name":msg_data.get("username"),
             "source":"twitch",
             "type":"twitch:profile",
-            "discoveredAt": modified_message.get("created_at")
+            "discoveredAt": msg_data.get("created_at")
         }
-        print(f"Document data (before post request)> {document_data}")
 
         try:
-            create_document_response, document_response = make_request(f"{os.getenv('NEO4J_URL')}/documents/SocialMedia", None, None, document_data, "POST")
-            create_entity_response, entity_response  = make_request(f"{os.getenv('NEO4J_URL')}/entities", None, None, entity_data, "POST")
-
-            print("!!!POST requests successful!!")
-            print(f'>the created document is {create_document_response}, and response {document_response}')
-            print(f'>the created entity is {create_entity_response}, and response {entity_response}')
-            print(f">Now we will send the meesage to kafka\n")
-            topic, message = self.generate_message_tas_results(
-                datetime.datetime.utcnow().isoformat().split(".")[0] + 'Z',
-                streamer_name,
-                caseId, 
-                taskId, 
-                channels.get(streamer_name), 
-                create_document_response['data']['id'])
-            self.producer.send_message(topic, message)
+            document_response, document_response_status = make_request(f"{os.getenv('NEO4J_URL')}/documents/SocialMedia", None, None, document_data, "POST")
+            entity_response, entity_response_status  = make_request(f"{os.getenv('NEO4J_URL')}/entities", None, None, entity_data, "POST")
+            docId = document_response['data']['id']
+            entityId = entity_response['data']['id']
+            relationship_data = {
+                "sourceNodeId": entityId,
+                "targetNodeId": docId,
+                "type": "hasAuthor"
+            }
+            
+            test, test_response = make_request(f"{os.getenv('NEO4J_URL')}/relationships", None, None, relationship_data, "POST")
+            print(test, test_response)
+            self.send_message_to_kafka(streamer_name, caseId, taskId, jobId, docId)
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")
         except Exception as e:
@@ -106,6 +107,16 @@ class SocketClient:
 
         return os.getenv("TOPIC_MESSAGE_DONE"), json.dumps(msg)
 
+    def send_message_to_kafka(self, streamer_name, caseId, taskId, jobId, docId):
+        topic, message = self.generate_message_tas_results(
+            datetime.datetime.utcnow().isoformat().split(".")[0] + 'Z',
+            streamer_name,
+            caseId, 
+            taskId, 
+            jobId, 
+            docId)
+        self.producer.send_message(topic, message)
+
 def make_request(url, params=None, headers=None, data=None, method="GET"):
     try:
         if method.upper() == 'GET':
@@ -119,10 +130,11 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
         
         response.raise_for_status()
         response_data = {
-        'status': 'Success',
-        'data': response.json()
+            'status': 'Success',
+            'data': response.json()
         }
-        return response_data, 200
+
+        return response_data, response.status_code
     
     except requests.exceptions.RequestException as e:
         if hasattr(e, 'response') and e.response is not None:
