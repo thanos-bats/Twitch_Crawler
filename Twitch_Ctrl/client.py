@@ -46,18 +46,18 @@ class SocketClient:
         document_data = {
             "jobId": jobId,
             "domainId": f"twitch:comment:{streamer_name}",
-            "title": msg_data.get("message"),
+            "title": None,
             "content": msg_data.get("message"),
-            "raw": "{}",
+            "raw": None,
             "source": "twitch",
             "type": "twitch:comment",
             "publishedAt": msg_data.get("created_at"),
             "discoveredAt": msg_data.get("created_at"),
-            "lang": ""
+            "lang": "und" # Maybe add the lang here
         }
         entity_data = {
             "domainId":f"twitch:profile:{msg_data.get("username")}",
-            "title":msg_data.get("username"),
+            "title":None,
             "name":msg_data.get("username"),
             "source":"twitch",
             "type":"twitch:profile",
@@ -75,8 +75,8 @@ class SocketClient:
                 "type": "hasAuthor"
             }
             
-            test, test_response = make_request(f"{os.getenv('NEO4J_URL')}/relationships", None, None, relationship_data, "POST")
-            print(test, test_response)
+            _, _ = make_request(f"{os.getenv('NEO4J_URL')}/relationships", None, None, relationship_data, "POST")
+
             self.send_message_to_kafka(streamer_name, caseId, taskId, jobId, docId)
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")

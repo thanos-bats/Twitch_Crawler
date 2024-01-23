@@ -43,8 +43,8 @@ def get_text_index(keyword, limit):
     #     {"score": {"$meta": "textScore"}, "_id": 0}
     # ).sort([("score", {"$meta": "textScore"})]).limit(limit)
     
-    
-    regex_pattern = f"{keyword}.*"
+    # regex_pattern = f"^{keyword}"
+    regex_pattern = f".*{keyword}.*"
     cursor = collection.find({"name": {"$regex": regex_pattern, "$options": "i"}}).limit(limit)
     results = [(calculate_similarity(keyword, doc["name"]), doc) for doc in cursor]
     sorted_results = sorted(results, key=lambda x: x[0], reverse=True)
