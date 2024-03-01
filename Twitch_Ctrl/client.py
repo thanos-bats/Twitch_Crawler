@@ -2,17 +2,19 @@ import os
 import json
 import datetime
 import requests
+import hashlib
+import re
 
 from socketio.client import Client
 from dotenv import load_dotenv
-from kafka.kafka_producer import MessageProducer
+from kafka.kafka_producer import ProducerHandler
 
 load_dotenv()
 
 class SocketClient:
     def __init__(self):
         self.socket = Client()
-        self.producer = MessageProducer(os.getenv('BOOTSTRAP_SERVERS'))
+        self.producer = ProducerHandler()
 
         self.socket.on('connect', self.handle_connect)
         self.socket.on('disconnect', self.handle_disconnect)
@@ -33,8 +35,11 @@ class SocketClient:
     
     def handle_message(self, data):
         # Data's structure { "data": {Message info}, "channels": [{"streamerName": Name, "jobId": id}], "caseId": caseId, "taskId": taskId}
+        streamer_name = data['data']['streamer']
+
+        data = pseudo_anonymize(data)
         msg_data = data.get('data')
-        streamer_name = msg_data.get('streamer', 'unknown_streamer')
+        hash_streamer_name = msg_data.get('streamer', 'unknown_streamer')
         channels = data.get('channels')
         caseId = data.get('caseId')
         taskId = data.get('taskId')
@@ -45,7 +50,7 @@ class SocketClient:
 
         document_data = {
             "jobId": jobId,
-            "domainId": f"twitch:comment:{streamer_name}",
+            "domainId": f"twitch:comment:{hash_streamer_name}",
             "title": None,
             "content": msg_data.get("message"),
             "raw": None,
@@ -55,15 +60,16 @@ class SocketClient:
             "discoveredAt": msg_data.get("created_at"),
             "lang": "und" # Maybe add the lang here
         }
+        
         entity_data = {
-            "domainId":f"twitch:profile:{msg_data.get("username")}",
+            "domainId":f"twitch:profile:{msg_data['username']}",
             "title":None,
             "name":msg_data.get("username"),
             "source":"twitch",
             "type":"twitch:profile",
             "discoveredAt": msg_data.get("created_at")
         }
-
+        
         try:
             document_response, document_response_status = make_request(f"{os.getenv('NEO4J_URL')}/documents/SocialMedia", None, None, document_data, "POST")
             entity_response, entity_response_status  = make_request(f"{os.getenv('NEO4J_URL')}/entities", None, None, entity_data, "POST")
@@ -156,6 +162,29 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
             }
         return error_data, 500
     
+def pseudo_anonymize(data):
+    streamer_hash = calculate_sha(data['data']['streamer'])
+    data['data']['streamer'] = streamer_hash
+
+    username_hash = calculate_sha(data['data']['username'])
+    data['data']['username'] = username_hash
+
+    message = data['data']['message']
+    mentions = re.findall(r'@[^\s]+', message) 
+    for mention in mentions:
+        mention_hash = calculate_sha(mention[1:])
+        message = message.replace(mention, mention_hash)
+
+    data['data']['message'] = message
+    return data
+
+def calculate_sha(input):
+    input_bytes = input.encode('utf-8')
+    sha512_hash = hashlib.sha512(input_bytes)
+    sha512_hex = sha512_hash.hexdigest()
+
+    return sha512_hex
+
 if __name__ == '__main__':
     socket_client = SocketClient()
     socket_client.start()
