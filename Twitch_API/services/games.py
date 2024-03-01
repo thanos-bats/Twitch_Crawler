@@ -21,10 +21,10 @@ def get_games(after, games):
 
     response, status_code = make_request(url, params, headers)
 
-    if (status_code == 500) and (not games["data"]):
+    if (status_code == 401) and (not games["data"]):
         print(f'{response}')
         return
-
+    
     if response['data']:
         json_data = response['data']
         games["data"].extend(json_data["data"])

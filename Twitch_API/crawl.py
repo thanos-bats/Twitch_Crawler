@@ -1,3 +1,4 @@
+# A file built for the purpose of crawling to retrieve data for specific Twitch categories, filtered by keywords in their titles.
 import time
 from utilities.utils import *
 from utilities.irc_utils import *

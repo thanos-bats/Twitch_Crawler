@@ -5,7 +5,6 @@ import os
 from dotenv import load_dotenv
 import requests
 from fuzzywuzzy import fuzz
-import random
 
 def get_error_message(param):
     return jsonify({

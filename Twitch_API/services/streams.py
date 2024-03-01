@@ -56,6 +56,10 @@ def retrieve_comments_stop(crawling_id):
         }
         return response_data, 404
     
+def send_command(irc, cmd):
+    print(f'< {cmd}')
+    irc.send((cmd + '\r\n').encode('utf-8'))
+
 irc_connections = {}
 irc_threads = {}
 def retrieve_comments_start(caseId, crawling_id, channels):
@@ -80,7 +84,7 @@ def retrieve_comments_start(caseId, crawling_id, channels):
     send_command(irc, f'NICK {username}')
     
     for channel in channels:
-        send_command(irc, f'JOIN #{channel.get('streamerName')}')
+        send_command(irc, f"JOIN #{channel.get('streamerName')}")
         
     resp =  irc.recv(2048).decode()
     if 'failed' in resp:
