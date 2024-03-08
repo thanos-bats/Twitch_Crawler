@@ -36,9 +36,9 @@ class SocketClient:
     def handle_message(self, data):
         # Data's structure { "data": {Message info}, "channels": [{"streamerName": Name, "jobId": id}], "caseId": caseId, "taskId": taskId}
         streamer_name = data['data']['streamer']
+        sha_data = pseudo_anonymize(data)
 
-        data = pseudo_anonymize(data)
-        msg_data = data.get('data')
+        msg_data = sha_data.get('data')
         hash_streamer_name = msg_data.get('streamer', 'unknown_streamer')
         channels = data.get('channels')
         caseId = data.get('caseId')
@@ -73,6 +73,10 @@ class SocketClient:
         try:
             document_response, document_response_status = make_request(f"{os.getenv('NEO4J_URL')}/documents/SocialMedia", None, None, document_data, "POST")
             entity_response, entity_response_status  = make_request(f"{os.getenv('NEO4J_URL')}/entities", None, None, entity_data, "POST")
+            print(f"The responses {document_response_status} and {entity_response_status}")
+            if document_response_status != 201 or entity_response_status != 201:
+                return
+            
             docId = document_response['data']['id']
             entityId = entity_response['data']['id']
             relationship_data = {
