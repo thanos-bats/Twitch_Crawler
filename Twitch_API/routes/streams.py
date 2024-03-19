@@ -1,6 +1,6 @@
 # routes/streams.py
 from flask import jsonify, request
-from services.streams import get_streams, retrieve_comments_start, retrieve_comments_stop
+from services.streams import get_streams, retrieve_comments_start, retrieve_comments_stop, create_jobs_per_streamer
 from routes import streams_bp
 from utilities.utils import get_error_message
 
@@ -32,8 +32,8 @@ def start_comments_handler():
     if not data.get('caseId') and not data.get('taskId') and not data.get('streamers'):
         return get_error_message('caseId, taskId and streamers list')
     
-    
-    response_data, status_code = retrieve_comments_start(data.get('caseId'), data.get('taskId'), data.get('streamers'))
+    streamers_data, status_code = create_jobs_per_streamer(data.get("streamers"), data.get("taskId"))
+    response_data, status_code = retrieve_comments_start(data.get('caseId'), data.get('taskId'), streamers_data.get('streamers'))
     return jsonify(response_data), status_code
 
 # Stops retrieving comments for a crawling id

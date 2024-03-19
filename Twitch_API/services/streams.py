@@ -6,6 +6,31 @@ import string
 import threading
 import os
 
+def create_jobs_per_streamer(channels, taskId):
+    streamer_data = {
+        "streamers": []
+    } 
+    for channel in channels:
+        res, status_code = create_job(channel, taskId)
+        if res.get('status') != "Success":
+            continue
+        streamer_data["streamers"].append({"streamerName": res["data"]["user_name"], "jobId": res["data"]["id"]})
+       
+    return streamer_data, status_code
+
+def create_job(data, taskId):
+    neo4j_url = os.getenv("NEO4J_URL")
+    data["taskId"] = taskId
+    data["status"] = "Active"
+    data["type"] = "twitch:crawl"
+    data["user_name"] = data.pop("streamerName")
+    # return data, 202
+    res, status_code = make_request(f"{neo4j_url}/jobs", None, None, data, "POST")
+    if res.get('status') != "Success" or status_code != 200:
+        return {'message': 'Failed to create Job', 'error': res}, status_code
+    
+    return res, status_code
+
 def get_streams(game_id, number_of_results, user_id, user_login, language,cursor, endpoint):
     client_id, access_token, base_url, _ = get_dotenv()
     url = f"{base_url}{endpoint}"
@@ -20,11 +45,15 @@ def get_streams(game_id, number_of_results, user_id, user_login, language,cursor
     if response_status != 200:
         return response_data, response_status
     
+    all_tags = set()
     for item in response_data["data"]:
         item.pop("type", None)
         item["stream_url"] = "https://www.twitch.tv/" + item["user_login"] #item.pop("user_login", None)
         item.pop("tag_ids", None)
 
+        all_tags.update(item.get("tags", []))
+
+    response_data["all_tags"] = list(all_tags)
     return response_data, response_status
 
 def retrieve_comments_stop(crawling_id):
@@ -39,16 +68,17 @@ def retrieve_comments_stop(crawling_id):
         del irc_threads[crawling_id]
         del irc_connections[crawling_id]
 
-        #response_message, status_code = update_statuses(crawling_id)
-        # if status_code != 200:
-        #     response_data = response_message
-        
-        response_data = {
-            'id': crawling_id,
-            'message': 'Connection stoped successfully'
-        }
-        print(response_data)
-        return response_data, 200
+        response_message, status_code = update_statuses(crawling_id)
+        if status_code != 200:
+            response_data = response_message
+        else:
+            response_data = {
+                'id': crawling_id,
+                'message': 'Connection stoped successfully'
+            }
+            status_code = 200
+
+        return response_data, status_code
     else:
         response_data = {
             "taskId": crawling_id,
@@ -132,3 +162,4 @@ def update_statuses(taskId):
             return {'message': f'Failed to update job status for job ID {job.get("id")}', 'error': res}, status_code
 
     return {'message': 'All statuses updated successfully'}, 200
+
