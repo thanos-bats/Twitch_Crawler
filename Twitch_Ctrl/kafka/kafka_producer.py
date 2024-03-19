@@ -23,10 +23,10 @@ class ProducerHandler:
 
     def send_message(self, topic, message_data):
         print(f'I m sending message into {topic} topic')
-
-        # Send the JSON message to Kafka
-        json_message = json.dumps(message_data)
-        self.producer.produce(topic, json_message.encode('utf-8'), callback=self.delivery_report)
+        print(f'The message data is {message_data} and the type {type(message_data)}')
+        message_json = json.dumps(message_data)
+        print(f"\n The message json is {message_json} and the type {type(message_json)}")
+        self.producer.produce(topic, value=message_json, callback=self.delivery_report)
         self.producer.flush()
 
     def close(self):

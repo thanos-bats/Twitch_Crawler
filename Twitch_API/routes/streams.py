@@ -11,7 +11,6 @@ def get_game_streams():
     #game_ids = request.args.getlist('game_id')
     game_ids_param = request.args.get('game_id')
     game_ids = [int(game_id) for game_id in game_ids_param.split(',')] if game_ids_param else []
-    print(game_ids)
     number_of_results = int(request.args.get('number_of_results', 50))
     user_id = request.args.get('user_id', None)
     user_login = request.args.get('user_login', None)

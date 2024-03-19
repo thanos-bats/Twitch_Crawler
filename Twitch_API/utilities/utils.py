@@ -126,8 +126,7 @@ def get_data_paginated(url, params, headers, number, after=None, data={"data": [
     params["first"], number = handle_first_param(first, number)
     if after is not None:
         params["after"] = after
-    print(params)
-    print(headers)
+    
     response, status_code = make_request(url, params, headers)
 
     if status_code != 200 and (not data["data"]): # If there is an error, we return the error

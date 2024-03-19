@@ -73,7 +73,6 @@ class SocketClient:
         try:
             document_response, document_response_status = make_request(f"{os.getenv('NEO4J_URL')}/documents/SocialMedia", None, None, document_data, "POST")
             entity_response, entity_response_status  = make_request(f"{os.getenv('NEO4J_URL')}/entities", None, None, entity_data, "POST")
-            print(f"The responses {document_response_status} and {entity_response_status}")
             if document_response_status != 201 or entity_response_status != 201:
                 return
             
@@ -115,7 +114,7 @@ class SocketClient:
             }
         }
 
-        return os.getenv("TOPIC_MESSAGE_DONE"), json.dumps(msg)
+        return os.getenv("TOPIC_MESSAGE_DONE"), msg
 
     def send_message_to_kafka(self, streamer_name, caseId, taskId, jobId, docId):
         topic, message = self.generate_message_tas_results(
@@ -129,6 +128,7 @@ class SocketClient:
 
 def make_request(url, params=None, headers=None, data=None, method="GET"):
     try:
+        print(f"\nBefore the API call\nThe url is {url}\n")
         if method.upper() == 'GET':
             response = requests.get(url, params=params, headers=headers)
         elif method.upper() == 'POST':
@@ -143,7 +143,7 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
             'status': 'Success',
             'data': response.json()
         }
-
+        print(f"The response data is {response_data} with status {response.status_code}")
         return response_data, response.status_code
     
     except requests.exceptions.RequestException as e:
@@ -156,7 +156,7 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
                 'message': str(e)
             }
             status_code = 500
-
+        print(f"The error data is {error_data} with status {status_code}")
         return error_data, status_code
     
     except ValueError as e:
