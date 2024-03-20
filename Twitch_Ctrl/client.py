@@ -34,7 +34,7 @@ class SocketClient:
             print('> Error connecting: ', e)
     
     def handle_message(self, data):
-        # Data's structure { "data": {Message info}, "channels": [{"streamerName": Name, "jobId": id}], "caseId": caseId, "taskId": taskId}
+        # Data's structure { "data": {Message content}, "channels": [{"streamerName": Name, "jobId": id, "lan": Language}], "caseId": caseId, "taskId": taskId}
         streamer_name = data['data']['streamer']
         sha_data = pseudo_anonymize(data)
 
@@ -47,6 +47,7 @@ class SocketClient:
         for streamer_data in channels: 
             if streamer_data.get('streamerName') == streamer_name:
                 jobId = streamer_data.get('jobId')
+                language = streamer_data.get("lan") if streamer_data.get("lan") in ["en", "el"] else "und"
 
         document_data = {
             "jobId": jobId,
@@ -58,7 +59,7 @@ class SocketClient:
             "type": "twitch:comment",
             "publishedAt": msg_data.get("created_at"),
             "discoveredAt": msg_data.get("created_at"),
-            "lang": "und" # Maybe add the lang here
+            "lang": language # Maybe add the lang here
         }
         
         entity_data = {

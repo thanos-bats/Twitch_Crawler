@@ -14,7 +14,7 @@ def create_jobs_per_streamer(channels, taskId):
         res, status_code = create_job(channel, taskId)
         if res.get('status') != "Success":
             continue
-        streamer_data["streamers"].append({"streamerName": res["data"]["user_name"], "jobId": res["data"]["id"]})
+        streamer_data["streamers"].append({"streamerName": res["data"]["user_name"], "jobId": res["data"]["id"], "lan": res["data"]["lan"]})
        
     return streamer_data, status_code
 
