@@ -1,10 +1,11 @@
 from flask import Flask
-
+from flask_cors import CORS
 from .events import socketio
 from routes import games_bp, streams_bp, videos_bp, users_bp
 
 def create_app():
     app = Flask(__name__)
+    CORS(app)
 
     app.register_blueprint(games_bp)
     app.register_blueprint(streams_bp)
