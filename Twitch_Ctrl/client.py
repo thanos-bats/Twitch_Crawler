@@ -47,7 +47,6 @@ class SocketClient:
         for streamer_data in channels: 
             if streamer_data.get('streamerName') == streamer_name:
                 jobId = streamer_data.get('jobId')
-                language = streamer_data.get("lan") if streamer_data.get("lan") in ["en", "el"] else "und"
 
         document_data = {
             "jobId": jobId,
@@ -59,7 +58,7 @@ class SocketClient:
             "type": "twitch:comment",
             "publishedAt": msg_data.get("created_at"),
             "discoveredAt": msg_data.get("created_at"),
-            "lang": language # Maybe add the lang here
+            "lang": msg_data.get("lang")
         }
         
         entity_data = {
@@ -103,7 +102,6 @@ class SocketClient:
                 "sentUtc": sentUtc
             },
             "body": {
-                "description": f"twitch chat logs on user's {streamer} stream",
                 "data": [
                     {
                         "id": documentId,
@@ -129,7 +127,6 @@ class SocketClient:
 
 def make_request(url, params=None, headers=None, data=None, method="GET"):
     try:
-        print(f"\nBefore the API call\nThe url is {url}\n")
         if method.upper() == 'GET':
             response = requests.get(url, params=params, headers=headers)
         elif method.upper() == 'POST':
@@ -144,7 +141,6 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
             'status': 'Success',
             'data': response.json()
         }
-        print(f"The response data is {response_data} with status {response.status_code}")
         return response_data, response.status_code
     
     except requests.exceptions.RequestException as e:
