@@ -32,6 +32,8 @@ def start_comments_handler():
         return get_error_message('caseId, taskId and streamers list')
     
     streamers_data, status_code = create_jobs_per_streamer(data.get("streamers"), data.get("taskId"))
+    if len(streamers_data["streamers"]) == 0:
+        return get_error_message("No Job created into the DB")
     response_data, status_code = retrieve_comments_start(data.get('caseId'), data.get('taskId'), streamers_data.get('streamers'))
     return jsonify(response_data), status_code
 
