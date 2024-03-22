@@ -2,6 +2,7 @@ import threading
 from datetime import timezone
 import datetime
 from app import socketio
+from utilities.utils import detect_language
 import re
 
 def send_command(irc, command):
@@ -10,7 +11,6 @@ def send_command(irc, command):
 
 def handle_messages(irc, crawling_id, channels, caseId): # The crawling_id is the same with the taskId from the neo4j.
     stop_flag = getattr(threading.current_thread(), "stop_flag", False)
-    
     #while not stop_event.is_set():
     while not stop_flag:
         try:
@@ -26,7 +26,7 @@ def handle_messages(irc, crawling_id, channels, caseId): # The crawling_id is th
                 elif "PRIVMSG" in msg:
                     modified_message = modify_message(crawling_id, msg)
                     if modified_message:
-                        print("> ", modified_message)
+                        print("> ", modified_message, "\n")
                         socketio.emit('message', { "data": modified_message, "channels": channels, "caseId": caseId, "taskId": crawling_id })
             
             stop_flag = getattr(threading.current_thread(), "stop_flag", False)
@@ -39,17 +39,21 @@ def modify_message(crawling_id, data):
     
     if not match:
         return None
-
     username = match.group('username')
     streamer = match.group('streamer')
     message = match.group('message').strip()
-
+    __detect_data = detect_language(username, message)
+    if "error" in __detect_data:
+        language = "und"
+    else: 
+        language = __detect_data[username]
+        
     data = {
         "id": crawling_id,
         "streamer": streamer, 
         "username": username,
         "message": message,
-        "created_at": datetime.datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ") 
+        "created_at": datetime.datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "lang":  language
     }
-
     return data

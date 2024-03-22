@@ -142,3 +142,30 @@ def create_dict_from_vars(**kwargs):
 
 def calculate_similarity(query, target):
     return fuzz.ratio(query, target)
+
+def detect_language(streamer, msg):
+    data = [{"id": streamer, "content": msg}]
+    resp, resp_status_code = make_request(os.getenv("LANG_DETECT_URL"), None, None, data, "POST")
+    if resp_status_code != 200:
+        return {"error": "Error with the language detection of the message content"}
+    
+    detect_data = {}
+    for item in resp['data']:
+        id_ = item.get("id")
+        if "detection" in item:
+            languages = item["detection"]["languages"]
+            if languages:
+                languages.sort(key=lambda x: x["percent"], reverse=True)
+                language = languages[0]["code"]
+                if language not in {"el", "en"}: # For now the Tools are support Greek and English content. For multilingual content delete those lines
+                    language = "und"
+            else:
+                language = "und"
+
+        else:
+            language = "und" if "error" in item else None
+
+        detect_data[id_] = language
+    return detect_data
+
+
