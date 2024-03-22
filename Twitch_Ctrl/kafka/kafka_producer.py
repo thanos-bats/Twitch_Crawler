@@ -22,10 +22,9 @@ class ProducerHandler:
             print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
 
     def send_message(self, topic, message_data):
-        print(f'I m sending message into {topic} topic')
-        print(f'The message data is {message_data} and the type {type(message_data)}')
+
         message_json = json.dumps(message_data)
-        print(f"\n The message json is {message_json} and the type {type(message_json)}")
+        print(f"\n The message: {message_json}")
         self.producer.produce(topic, value=message_json, callback=self.delivery_report)
         self.producer.flush()
 
