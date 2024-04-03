@@ -35,9 +35,9 @@ class SocketClient:
     
     def handle_message(self, data):
         # Data's structure { "data": {Message content}, "channels": [{"streamerName": Name, "jobId": id, "lan": Language}], "caseId": caseId, "taskId": taskId}
-        streamer_name = data['data']['streamer']
+        
         sha_data = pseudo_anonymize(data)
-
+        streamer_name = sha_data['data']['streamer']
         msg_data = sha_data.get('data')
         hash_streamer_name = msg_data.get('streamer', 'unknown_streamer')
         channels = data.get('channels')
@@ -58,7 +58,10 @@ class SocketClient:
             "type": "twitch:comment",
             "publishedAt": msg_data.get("created_at"),
             "discoveredAt": msg_data.get("created_at"),
-            "lang": msg_data.get("lang")
+            "lang": msg_data.get("lang"),
+            "attributes": {
+                "authorName": msg_data['username']
+            }
         }
         
         entity_data = {
@@ -79,8 +82,8 @@ class SocketClient:
             docId = document_response['data']['id']
             entityId = entity_response['data']['id']
             relationship_data = {
-                "sourceNodeId": entityId,
-                "targetNodeId": docId,
+                "sourceNodeId": docId,
+                "targetNodeId": entityId,
                 "type": "hasAuthor"
             }
             
@@ -174,7 +177,7 @@ def pseudo_anonymize(data):
     mentions = re.findall(r'@[^\s]+', message) 
     for mention in mentions:
         mention_hash = calculate_sha(mention[1:])
-        message = message.replace(mention, mention_hash)
+        message = message.replace(mention, '@'+mention_hash)
 
     data['data']['message'] = message
     return data
