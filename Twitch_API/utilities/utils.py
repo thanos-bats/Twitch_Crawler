@@ -5,6 +5,7 @@ import os
 from dotenv import load_dotenv
 import requests
 from fuzzywuzzy import fuzz
+import hashlib
 
 def get_error_message(param):
     return jsonify({
@@ -94,8 +95,8 @@ def handle_first_param(first, number):
     
     return 100, (number - first)
 
-def get_data(url, params, headers, number, after=None, data={"data": []}, first=100):
-    params["first"], number = handle_first_param(first, number)
+def get_data(url, params, headers, after=None, data={"data": []}, first=100):
+    params["first"] = first
     if after is not None:
         params["after"] = after
 
@@ -103,7 +104,7 @@ def get_data(url, params, headers, number, after=None, data={"data": []}, first=
 
     if status_code != 200 and (not data["data"]): # If there is an error, we return the error
         return response, status_code
-
+    
     json_data = response['data']
     if not json_data.get("data") and not data["data"]:
         return data, status_code
@@ -112,15 +113,13 @@ def get_data(url, params, headers, number, after=None, data={"data": []}, first=
         return data, status_code
     
     data["data"].extend(json_data["data"])
-    if number == 0:
+
+    if not json_data["pagination"]:
         return data, status_code
     
-    if "cursor" in json_data["pagination"]:
-        after = json_data["pagination"]["cursor"]
-    else:
-        after = None
+    after = json_data["pagination"]["cursor"]        
 
-    return get_data(url, params, headers, number, after=after, data=data)
+    return get_data(url, params, headers, after=after, data=data)
 
 def get_data_paginated(url, params, headers, number, after=None, data={"data": []}, first=100):
     params["first"], number = handle_first_param(first, number)
@@ -128,7 +127,7 @@ def get_data_paginated(url, params, headers, number, after=None, data={"data": [
         params["after"] = after
     
     response, status_code = make_request(url, params, headers)
-
+    print(url)
     if status_code != 200 and (not data["data"]): # If there is an error, we return the error
         return response, status_code
 
@@ -168,4 +167,10 @@ def detect_language(streamer, msg):
         detect_data[id_] = language
     return detect_data
 
+def calculate_sha(input):
+    input_bytes = input.encode('utf-8')
+    sha512_hash = hashlib.sha512(input_bytes)
+    sha512_hex = sha512_hash.hexdigest()
+
+    return sha512_hex
 
