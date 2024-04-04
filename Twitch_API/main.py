@@ -10,7 +10,7 @@ scheduler = BackgroundScheduler()
 def run_scheduler():
      with app.app_context():
         get_games(None, {"data": []})
-        scheduler.add_job(func=get_games, args=(None, {"data": []}), trigger='interval', hours=1)
+        scheduler.add_job(func=get_games, args=(None, {"data": []}), trigger='interval', hours=3)
         print('Scheduler started at ', datetime.datetime.now())
         scheduler.start()
 
