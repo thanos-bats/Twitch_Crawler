@@ -11,10 +11,10 @@ def create_jobs_per_streamer(channels, taskId):
         "streamers": []
     } 
     for channel in channels:
-        res, status_code = create_job(channel, taskId)
+        res, streamerName, status_code = create_job(channel, taskId)
         if res.get('status') != "Success":
             continue
-        streamer_data["streamers"].append({"streamerName": res["data"]["user_name"], "jobId": res["data"]["id"], "lan": res["data"]["lan"]})
+        streamer_data["streamers"].append({"streamerName": res["data"]["user_name"], "jobId": res["data"]["id"], "lan": res["data"]["lan"], "user_login": streamerName})
        
     return streamer_data, status_code
 
@@ -23,13 +23,14 @@ def create_job(data, taskId):
     data["taskId"] = taskId
     data["status"] = "Active"
     data["type"] = "twitch:crawl"
-    data["user_name"] = data.pop("streamerName")
+    streamerName = data.get("streamerName")
+    data["user_name"] = calculate_sha(data.pop("streamerName"))
     # return data, 202
     res, status_code = make_request(f"{neo4j_url}/jobs", None, None, data, "POST")
     if res.get('status') != "Success" or status_code != 200:
-        return {'message': 'Failed to create Job', 'error': res}, status_code
+        return {'message': 'Failed to create Job', 'error': res}, None, status_code
     
-    return res, status_code
+    return res, streamerName, status_code
 
 def get_streams(game_id, number_of_results, user_id, user_login, language,cursor, endpoint):
     client_id, access_token, base_url, _ = get_dotenv()
@@ -48,9 +49,9 @@ def get_streams(game_id, number_of_results, user_id, user_login, language,cursor
     all_tags = set()
     for item in response_data["data"]:
         item.pop("type", None)
-        item["stream_url"] = "https://www.twitch.tv/" + item["user_login"] #item.pop("user_login", None)
         item.pop("tag_ids", None)
-
+        item["pseudo_user_login"] = calculate_sha(item["user_login"])
+        item["stream_url"] = "https://www.twitch.tv/" + item["pseudo_user_login"] #item.pop("user_login", None)
         all_tags.update(item.get("tags", []))
 
     response_data["all_tags"] = list(all_tags)
@@ -114,7 +115,7 @@ def retrieve_comments_start(caseId, crawling_id, channels):
     send_command(irc, f'NICK {username}')
     
     for channel in channels:
-        send_command(irc, f"JOIN #{channel.get('streamerName')}")
+        send_command(irc, f"JOIN #{channel.pop('user_login')}")
         
     resp =  irc.recv(2048).decode()
     if 'failed' in resp:
@@ -163,3 +164,98 @@ def update_statuses(taskId):
 
     return {'message': 'All statuses updated successfully'}, 200
 
+all_streams = {}
+def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
+    global all_tags
+    tags_to_return = set()
+    if not crawl_id:
+        all_streams.clear()
+
+        crawl_id = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
+        print(f"Random Id: {crawl_id}")
+        print(f"Games {game_id}")
+        for game in game_id:
+            if crawl_id not in all_streams:
+                all_streams[crawl_id] = {}
+            all_streams[crawl_id][game] = {}
+        # return {"streams": all_streams, "crawl_id": crawl_id}, 200
+    else:
+        if crawl_id not in all_streams:
+            return {"Error": "The crawl id there isn't exists"}, 404
+        
+        new_games = []
+        for game in game_id:
+            if game in all_streams[crawl_id]:
+                tags_to_return.update(list(all_streams[crawl_id][game].keys()))
+            else:
+                new_games.append(game)
+
+        print(f"The game ids list {game_id}")
+        print(f"The new game ids are {new_games}")
+        print(f"The tags to be returned {tags_to_return}")
+        if len(new_games) == 0:
+            return {"all_tags": list(tags_to_return), "crawl_id": crawl_id}, 200 
+
+    client_id, access_token, base_url, _ = get_dotenv()
+    url = f"{base_url}{endpoint}"
+    headers = {
+        "Client-ID": client_id,
+        "Authorization": f"Bearer {access_token}"
+    }
+
+    for language in languages:
+        params = create_dict_from_vars(game_id=game_id, user_id=user_id, user_login=user_login, language=language)
+
+        response_data, response_status = get_data(url, params, headers, None, {"data": []})
+
+        if response_status != 200:
+            return response_data, response_status
+        print(f"The all_streamers is {all_streams}\n")
+        for item in response_data["data"]:
+            item.pop("type", None)
+            item.pop("tag_ids", None)
+            item["pseudo_user_login"] = calculate_sha(item["user_login"])
+            item["stream_url"] = "https://www.twitch.tv/" + item["pseudo_user_login"]
+            print("Tags: ",item["tags"], " and user name ", item['user_login'] )
+            tags_to_return.update(item["tags"])
+            streamer = Streamer(item)
+            for tag in item["tags"]:
+                if int(item["game_id"]) not in all_streams[crawl_id]:
+                    all_streams[crawl_id][int(item["game_id"])] = {}  # Initialize empty dict for the game_id if not present
+
+                current_game_data = all_streams[crawl_id][int(item["game_id"])]
+
+                # Now check for the tag and append the streamer
+                if tag in current_game_data:
+                    all_streams[crawl_id][int(item["game_id"])][tag].append(streamer)
+                else:
+                    all_streams[crawl_id][int(item["game_id"])][tag] = [streamer]
+    
+    print(f"The all_streamers is {all_streams}\n")
+    data = {"all_tags": list(tags_to_return), "crawl_id": crawl_id}
+    return data, 200
+
+def get_streams_by_tags(tags, crawl_id):
+    if crawl_id not in all_streams:
+        return {"Error": "The crawl id there isn't exists"}, 404
+    filtered_streamers = []
+    for game_id, tags_data in all_streams[crawl_id].items():
+        for tag in tags:
+            if tag in tags_data:
+                filtered_streamers.extend(tags_data[tag])
+    print(filtered_streamers)
+
+    filtered_streamers = list({id(streamer): streamer for streamer in filtered_streamers}.values())
+    data = {"data": []}
+    for streamer in filtered_streamers:
+        data["data"].append(streamer.to_dict())
+    
+        
+    return data, 200
+
+class Streamer:
+    def __init__(self, data):
+        self.data = data
+
+    def to_dict(self):
+        return self.data
