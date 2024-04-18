@@ -68,9 +68,11 @@ def get_all_tags_route():
 def get_streams_by_tags_route():
     tags_param = request.args.get('tags', None)
     crawl_id = request.args.get('crawl_id')
+    game_ids_param = request.args.get('game_ids')
     if (not tags_param) or (not crawl_id):
         return get_error_message("tags and the crawl_id")
     
     tags = [str(tag) for tag in tags_param.split(',')]
-    data, status_code = get_streams_by_tags(tags, crawl_id)
+    game_ids = [int(game_id) for game_id in game_ids_param.split(',')] if game_ids_param else []
+    data, status_code = get_streams_by_tags(tags, crawl_id, game_ids)
     return jsonify(data), status_code
