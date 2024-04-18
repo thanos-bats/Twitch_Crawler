@@ -107,7 +107,7 @@ class SocketClient:
             "body": {
                 "data": [
                     {
-                        "id": documentId,
+                        "documentId": documentId,
                         "caseId": caseId,
                         "taskId": taskId,
                         "jobId": jobId
