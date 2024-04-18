@@ -217,6 +217,7 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
             item["pseudo_user_login"] = calculate_sha(item["user_login"])
             item["stream_url"] = "https://www.twitch.tv/" + item["pseudo_user_login"]
             print("Tags: ",item["tags"], " and user name ", item['user_login'] )
+            if item["tags"] == None: continue
             tags_to_return.update(item["tags"])
             streamer = Streamer(item)
             for tag in item["tags"]:
@@ -235,11 +236,14 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
     data = {"all_tags": list(tags_to_return), "crawl_id": crawl_id}
     return data, 200
 
-def get_streams_by_tags(tags, crawl_id):
+def get_streams_by_tags(tags, crawl_id, game_ids):
     if crawl_id not in all_streams:
         return {"Error": "The crawl id there isn't exists"}, 404
     filtered_streamers = []
     for game_id, tags_data in all_streams[crawl_id].items():
+        if game_id not in game_ids: 
+            continue
+        
         for tag in tags:
             if tag in tags_data:
                 filtered_streamers.extend(tags_data[tag])
