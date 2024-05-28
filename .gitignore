@@ -9,3 +9,5 @@ mongo/data/*
 /Twitch_API/twitch_results/*
 docker-compose.yml
 data/*
+
+chatlogs/**
