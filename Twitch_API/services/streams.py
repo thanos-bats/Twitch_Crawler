@@ -257,6 +257,62 @@ def get_streams_by_tags(tags, crawl_id, game_ids):
         
     return data, 200
 
+def evaluate_expression(tokens, crawl_id, game_id):
+    def apply_operator(operators, values):
+        print(f"Inside apply operator")
+        operator = operators.pop()
+        if operator == 'AND':
+            right = values.pop()
+            left = values.pop()
+            values.append(left & right)
+        elif operator == 'OR':
+            right = values.pop()
+            left = values.pop()
+            values.append(left | right)
+        elif operator == 'NOT':
+            value = values.pop()
+            values.append(set() - value)
+        print(f"Operators {operators} || values: {values}\n")
+    if crawl_id not in all_streams:
+        return {"Error": "The crawl id there isn't exists"}, 404
+    
+    operators = []
+    values = []
+
+    while tokens:
+        token = tokens.pop(0).strip()
+        print(f"The token is {token}\n")
+        if token == '(':
+            operators.append(token)
+        elif token == ')':
+            while operators and operators[-1] != '(':
+                apply_operator(operators, values)
+            operators.pop()  # Remove the '('
+        elif token in {'AND', 'OR', 'NOT'}:
+            while (operators and operators[-1] in {'AND', 'OR', 'NOT'} and
+                   (token != 'NOT' and operators[-1] != 'NOT')):
+                apply_operator(operators, values)
+            operators.append(token)
+        else:
+            streamers = set(get_streamers_for_keyword(game_id, token, crawl_id))
+            print(f"The matched streamers are {streamers}")
+            values.append(streamers)
+    
+
+    while operators:
+        apply_operator(operators, values)
+    data = list(values[0])
+    print(f"DATA: {data}")
+    streamers = []
+    for streamer in data:
+        streamers.append(streamer.to_dict())
+
+    return streamers, 200
+
+def get_streamers_for_keyword(game_id, keyword, crawl_id):
+    print(crawl_id, " ", game_id)
+    return all_streams[crawl_id].get(game_id, {}).get(keyword, set())
+
 class Streamer:
     def __init__(self, data):
         self.data = data
