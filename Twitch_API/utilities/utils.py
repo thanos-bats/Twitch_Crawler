@@ -6,6 +6,11 @@ from dotenv import load_dotenv
 import requests
 from fuzzywuzzy import fuzz
 import hashlib
+import re
+
+def parse_query(query):
+    tokens = re.findall(r'\w+|\sAND\s|\sOR\s|\sNOT\s|\(|\)', query)
+    return tokens
 
 def get_error_message(param):
     return jsonify({
