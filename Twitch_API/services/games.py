@@ -14,14 +14,13 @@ def get_games(after, games):
         "Authorization": f"Bearer {access_token}"
     }
 
-    # if after is None:
-    #     print(headers)
+    if after is None:
+        print(headers)
     if after is not None:
         params["after"] = after
 
     response, status_code = make_request(url, params, headers)
-
-    if (status_code == 401) and (not games["data"]):
+    if (status_code == 401 or status_code == 500) and (not games["data"]):
         print(f'{response}')
         return
     
