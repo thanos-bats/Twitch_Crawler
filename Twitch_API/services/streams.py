@@ -174,6 +174,7 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
         crawl_id = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
         print(f"Random Id: {crawl_id}")
         print(f"Games {game_id}")
+        new_games = game_id
         for game in game_id:
             if crawl_id not in all_streams:
                 all_streams[crawl_id] = {}
@@ -192,7 +193,7 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
 
         print(f"The game ids list {game_id}")
         print(f"The new game ids are {new_games}")
-        print(f"The tags to be returned {tags_to_return}")
+        print(f"The tags to be returned 1: {tags_to_return}")
         if len(new_games) == 0:
             return {"all_tags": list(tags_to_return), "crawl_id": crawl_id}, 200 
 
@@ -204,35 +205,37 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
     }
 
     for language in languages:
-        params = create_dict_from_vars(game_id=game_id, user_id=user_id, user_login=user_login, language=language)
+        params = create_dict_from_vars(game_id=new_games, user_id=user_id, user_login=user_login, language=language)
 
         response_data, response_status = get_data(url, params, headers, None, {"data": []})
-
+        print(f"For params \n{params}")
         if response_status != 200:
             return response_data, response_status
-        print(f"The all_streamers is {all_streams}\n")
+        
         for item in response_data["data"]:
             item.pop("type", None)
             item.pop("tag_ids", None)
             item["pseudo_user_login"] = calculate_sha(item["user_login"])
             item["stream_url"] = "https://www.twitch.tv/" + item["pseudo_user_login"]
             print("Tags: ",item["tags"], " and user name ", item['user_login'] )
+
             if item["tags"] == None: continue
-            tags_to_return.update(item["tags"])
+            normalized_tags = [tag.lower() for tag in item["tags"]]
+            print("Normalized Tags: ", normalized_tags, "\n----------------------\n")
+            tags_to_return.update(normalized_tags)
             streamer = Streamer(item)
-            for tag in item["tags"]:
+            for tag in normalized_tags:
                 if int(item["game_id"]) not in all_streams[crawl_id]:
                     all_streams[crawl_id][int(item["game_id"])] = {}  # Initialize empty dict for the game_id if not present
 
                 current_game_data = all_streams[crawl_id][int(item["game_id"])]
-
                 # Now check for the tag and append the streamer
                 if tag in current_game_data:
                     all_streams[crawl_id][int(item["game_id"])][tag].append(streamer)
                 else:
                     all_streams[crawl_id][int(item["game_id"])][tag] = [streamer]
     
-    print(f"The all_streamers is {all_streams}\n")
+    #print(f"The all_streamers is {all_streams}\n")
     data = {"all_tags": list(tags_to_return), "crawl_id": crawl_id}
     return data, 200
 
@@ -260,6 +263,7 @@ def get_streams_by_tags(tags, crawl_id, game_ids):
 def evaluate_expression(tokens, crawl_id, game_id):
     def apply_operator(operators, values):
         print(f"Inside apply operator")
+        print(f"Operators {operators} || values: {values}\n")
         operator = operators.pop()
         if operator == 'AND':
             right = values.pop()
@@ -272,13 +276,12 @@ def evaluate_expression(tokens, crawl_id, game_id):
         elif operator == 'NOT':
             value = values.pop()
             values.append(set() - value)
-        print(f"Operators {operators} || values: {values}\n")
+        
     if crawl_id not in all_streams:
         return {"Error": "The crawl id there isn't exists"}, 404
     
     operators = []
     values = []
-
     while tokens:
         token = tokens.pop(0).strip()
         print(f"The token is {token}\n")
@@ -295,14 +298,18 @@ def evaluate_expression(tokens, crawl_id, game_id):
             operators.append(token)
         else:
             streamers = set(get_streamers_for_keyword(game_id, token, crawl_id))
-            print(f"The matched streamers are {streamers}")
+            print(f"The matched streamers for the token {token} are {len(streamers)}")
             values.append(streamers)
     
 
     while operators:
         apply_operator(operators, values)
+    
+    print(f"\n=======================\nOperators: {operators}")
+    if len(values) == 0: return values, 200
+    
     data = list(values[0])
-    print(f"DATA: {data}")
+    print(f"DATA: {data} | with length {len(data)}")
     streamers = []
     for streamer in data:
         streamers.append(streamer.to_dict())
@@ -310,8 +317,10 @@ def evaluate_expression(tokens, crawl_id, game_id):
     return streamers, 200
 
 def get_streamers_for_keyword(game_id, keyword, crawl_id):
-    print(crawl_id, " ", game_id)
     return all_streams[crawl_id].get(game_id, {}).get(keyword, set())
+
+def create_task_background():
+    return
 
 class Streamer:
     def __init__(self, data):
