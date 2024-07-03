@@ -10,7 +10,8 @@ import re
 
 def parse_query(query):
     tokens = re.findall(r'\w+|\sAND\s|\sOR\s|\sNOT\s|\(|\)', query)
-    return tokens
+    lower_tokens = [token.lower() for token in tokens]
+    return lower_tokens
 
 def get_error_message(param):
     return jsonify({
