@@ -32,14 +32,14 @@ def create_job(data, taskId):
     
     return res, streamerName, status_code
 
-def get_streams(game_id, number_of_results, user_id, user_login, language,cursor, endpoint):
+def get_streams(game_id, number_of_results, user_id, user_login, language, cursor, endpoint):
     client_id, access_token, base_url, _ = get_dotenv()
     url = f"{base_url}{endpoint}"
     headers = {
         "Client-ID": client_id,
         "Authorization": f"Bearer {access_token}"
     }
-    
+
     params = create_dict_from_vars(game_id=game_id, user_id=user_id, user_login=user_login, language=language)
     response_data, response_status = get_data_paginated(url, params, headers, number_of_results, cursor, {"data": []})
 
@@ -182,7 +182,9 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
         # return {"streams": all_streams, "crawl_id": crawl_id}, 200
     else:
         if crawl_id not in all_streams:
-            return {"Error": "The crawl id there isn't exists"}, 404
+            all_streams[crawl_id] = {}
+            print(f'The crawl id isnt exists. So I add it {all_streams[crawl_id]}')
+            #return {"Error": "The crawl id there isn't exists"}, 404
         
         new_games = []
         for game in game_id:
@@ -237,6 +239,7 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
     
     #print(f"The all_streamers is {all_streams}\n")
     data = {"all_tags": list(tags_to_return), "crawl_id": crawl_id}
+    print(all_streams)
     return data, 200
 
 def get_streams_by_tags(tags, crawl_id, game_ids):
@@ -284,28 +287,28 @@ def evaluate_expression(tokens, crawl_id, game_id):
     values = []
     while tokens:
         token = tokens.pop(0).strip()
-        print(f"The token is {token}\n")
+        print(f"The token is {token}")
         if token == '(':
             operators.append(token)
         elif token == ')':
             while operators and operators[-1] != '(':
                 apply_operator(operators, values)
             operators.pop()  # Remove the '('
-        elif token in {'AND', 'OR', 'NOT'}:
+        elif token.upper() in {'AND', 'OR', 'NOT'}:
+            print('inside operator')
             while (operators and operators[-1] in {'AND', 'OR', 'NOT'} and
                    (token != 'NOT' and operators[-1] != 'NOT')):
                 apply_operator(operators, values)
             operators.append(token)
         else:
             streamers = set(get_streamers_for_keyword(game_id, token, crawl_id))
-            print(f"The matched streamers for the token {token} are {len(streamers)}")
+            print(f"The matched streamers for the token {token} are {len(streamers)}\n")
             values.append(streamers)
     
 
     while operators:
         apply_operator(operators, values)
     
-    print(f"\n=======================\nOperators: {operators}")
     if len(values) == 0: return values, 200
     
     data = list(values[0])
@@ -319,8 +322,15 @@ def evaluate_expression(tokens, crawl_id, game_id):
 def get_streamers_for_keyword(game_id, keyword, crawl_id):
     return all_streams[crawl_id].get(game_id, {}).get(keyword, set())
 
-def create_task_background():
-    return
+def crawl_streams_background(case_id, task_id, game_ids, languages, tags):
+    print(f"Into the background scheduler\nThe games {game_ids}\nlangs {languages}\ntags {tags}")
+    
+    data, status_code = get_all_tags(None, game_ids, None, None, languages, "/streams/")
+    if status_code != 200: return data, status_code
+    filtered_data, status_code = get_streams_by_tags(tags, data['crawl_id'], game_ids)
+    print(data)
+    print(status_code)
+    return status_code
 
 class Streamer:
     def __init__(self, data):
