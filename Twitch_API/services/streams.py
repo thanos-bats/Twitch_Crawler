@@ -59,12 +59,13 @@ def get_streams(game_id, number_of_results, user_id, user_login, language, curso
 
 def retrieve_comments_stop(crawling_id):
     # The crawling id is the same with TaskId
-    irc = irc_connections.get(crawling_id)
-    irc_thread = irc_threads.get(crawling_id)
-
-    if irc_thread and irc:
-        irc_thread.stop_flag = True
-        irc.close()
+    connections = irc_connections.get(crawling_id)
+    threads = irc_threads.get(crawling_id)
+    print(f"Threads {threads}")
+    print(f"Connections {connections}")
+    if threads and connections:
+        for irc_thread in threads: irc_thread.stop_flag = True
+        for irc in connections: irc.close()
         
         del irc_threads[crawling_id]
         del irc_connections[crawling_id]
@@ -93,24 +94,20 @@ def send_command(irc, cmd):
 
 irc_connections = {}
 irc_threads = {}
-def retrieve_comments_start(caseId, crawling_id, channels):
-    
-    # The crawling id is the same with the Task id
-    if crawling_id in irc_connections.keys():
-        response_data = {
-            'id': crawling_id,
-            'message': 'The id already exists'
-        }
-        return response_data, 400
-    
+def retrieve_comments_start(caseId, crawling_id, channels): # The crawling id is the same with the Task id
     HOST = 'irc.chat.twitch.tv'
     PORT = 6667
-
-    oauth_token = 'oauth:' + ''.join(random.choices(string.ascii_letters + string.digits, k=30))    # 'oauth:u800sfpa0b6nuaqsyg7queipflza5e'
-    username = 'justinfan' + str(random.randint(1, 999))
+    print(f"CHANNERLS {channels}")
+    if crawling_id not in irc_connections.keys():
+        irc_connections[crawling_id] = []
 
     irc = socket.socket()
     irc.connect((HOST, PORT))
+    irc_connections[crawling_id].append(irc)
+    
+    oauth_token = 'oauth:' + ''.join(random.choices(string.ascii_letters + string.digits, k=30))    # 'oauth:u800sfpa0b6nuaqsyg7queipflza5e'
+    username = 'justinfan' + str(random.randint(1, 999))
+
     send_command(irc, f'PASS {oauth_token}')
     send_command(irc, f'NICK {username}')
     
@@ -127,10 +124,11 @@ def retrieve_comments_start(caseId, crawling_id, channels):
     
     irc_thread = threading.Thread(target=handle_messages, args=(irc, crawling_id, channels, caseId))
     irc_thread.start()
-    
-    irc_threads[crawling_id] = irc_thread
-    irc_connections[crawling_id] = irc
+    if crawling_id not in irc_threads: irc_threads[crawling_id] = []
+    irc_threads[crawling_id].append(irc_thread)
 
+    print(irc_threads)
+    print(f'========================\n{irc_connections}')
     response_data = {
         'id': crawling_id,
         'channels': channels,
@@ -210,7 +208,7 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
         params = create_dict_from_vars(game_id=new_games, user_id=user_id, user_login=user_login, language=language)
 
         response_data, response_status = get_data(url, params, headers, None, {"data": []})
-        print(f"For params \n{params}")
+        #print(f"For params \n{params}")
         if response_status != 200:
             return response_data, response_status
         
@@ -219,11 +217,11 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
             item.pop("tag_ids", None)
             item["pseudo_user_login"] = calculate_sha(item["user_login"])
             item["stream_url"] = "https://www.twitch.tv/" + item["pseudo_user_login"]
-            print("Tags: ",item["tags"], " and user name ", item['user_login'] )
+            #print("Tags: ",item["tags"], " and user name ", item['user_login'] )
 
             if item["tags"] == None: continue
             normalized_tags = [tag.lower() for tag in item["tags"]]
-            print("Normalized Tags: ", normalized_tags, "\n----------------------\n")
+            #print("Normalized Tags: ", normalized_tags, "\n----------------------\n")
             tags_to_return.update(normalized_tags)
             streamer = Streamer(item)
             for tag in normalized_tags:
@@ -239,7 +237,7 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
     
     #print(f"The all_streamers is {all_streams}\n")
     data = {"all_tags": list(tags_to_return), "crawl_id": crawl_id}
-    print(all_streams)
+    print(f"--------\nall streams {all_streams}\n---------\n")
     return data, 200
 
 def get_streams_by_tags(tags, crawl_id, game_ids):
@@ -265,9 +263,7 @@ def get_streams_by_tags(tags, crawl_id, game_ids):
 
 def evaluate_expression(tokens, crawl_id, game_id):
     def apply_operator(operators, values):
-        print(f"Inside apply operator")
-        print(f"Operators {operators} || values: {values}\n")
-        operator = operators.pop()
+        operator = operators.pop().upper()
         if operator == 'AND':
             right = values.pop()
             left = values.pop()
@@ -295,24 +291,21 @@ def evaluate_expression(tokens, crawl_id, game_id):
                 apply_operator(operators, values)
             operators.pop()  # Remove the '('
         elif token.upper() in {'AND', 'OR', 'NOT'}:
-            print('inside operator')
             while (operators and operators[-1] in {'AND', 'OR', 'NOT'} and
                    (token != 'NOT' and operators[-1] != 'NOT')):
                 apply_operator(operators, values)
             operators.append(token)
         else:
             streamers = set(get_streamers_for_keyword(game_id, token, crawl_id))
-            print(f"The matched streamers for the token {token} are {len(streamers)}\n")
+            print(f"For the game id {game_id} The matched streamers for the token {token} are {len(streamers)}\n")
             values.append(streamers)
     
-
     while operators:
         apply_operator(operators, values)
     
     if len(values) == 0: return values, 200
     
     data = list(values[0])
-    print(f"DATA: {data} | with length {len(data)}")
     streamers = []
     for streamer in data:
         streamers.append(streamer.to_dict())
@@ -322,15 +315,46 @@ def evaluate_expression(tokens, crawl_id, game_id):
 def get_streamers_for_keyword(game_id, keyword, crawl_id):
     return all_streams[crawl_id].get(game_id, {}).get(keyword, set())
 
+already_crawled = {}
 def crawl_streams_background(case_id, task_id, game_ids, languages, tags):
     print(f"Into the background scheduler\nThe games {game_ids}\nlangs {languages}\ntags {tags}")
     
     data, status_code = get_all_tags(None, game_ids, None, None, languages, "/streams/")
     if status_code != 200: return data, status_code
-    filtered_data, status_code = get_streams_by_tags(tags, data['crawl_id'], game_ids)
-    print(data)
-    print(status_code)
-    return status_code
+    
+    filtered_data = []
+    for game_id in game_ids:
+        tags_copy = tags[:]
+        resp, status_code = evaluate_expression(tags_copy, data['crawl_id'], game_id)
+        if status_code != 200: return resp, status_code
+        filtered_data.extend(resp)
+
+    if task_id not in already_crawled: already_crawled[task_id] = []
+
+    to_crawl = {
+        "streamers": []
+    }
+    for streamer in filtered_data:
+        if streamer['user_login'] in already_crawled[task_id]: continue
+        already_crawled[task_id].append(streamer['user_login'])
+        to_crawl["streamers"].append({
+                                    "streamerName": streamer["user_login"], 
+                                    "urls": [f"https://www.twitch.tv/{streamer['user_login']}"],
+                                    "title": streamer['title'], 
+                                    "keywords": streamer["tags"], 
+                                    "lan": streamer['language'],
+                                    "started_at": streamer['started_at']
+                                })
+    
+    
+    streamers_data, status_code = create_jobs_per_streamer(to_crawl.get("streamers"), task_id)
+    if len(streamers_data["streamers"]) == 0:
+        return get_error_message("No Job created into the DB")
+    _, _ = retrieve_comments_start(case_id, task_id, streamers_data.get('streamers'))
+    return
+
+def remove_taskId_from_already_crawled(taskId):
+    already_crawled.pop(taskId, None)
 
 class Streamer:
     def __init__(self, data):

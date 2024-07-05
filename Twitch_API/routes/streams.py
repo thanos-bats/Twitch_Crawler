@@ -1,11 +1,14 @@
 # routes/streams.py
 from flask import jsonify, request
-
-from services.streams import get_streams, retrieve_comments_start, retrieve_comments_stop, create_jobs_per_streamer, get_all_tags, get_streams_by_tags, evaluate_expression, create_task_background
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
+from apscheduler.triggers.date import DateTrigger
+from datetime import datetime
+from services.streams import *
 from routes import streams_bp
 from utilities.utils import get_error_message, parse_query
 
-# Returns a list of live streams for a specific game id or a user id
+# Returns a paginated list of live streams for a specific game ids or a user id
 @streams_bp.route('/', methods=['GET'])
 def get_game_streams():
     # game_id = request.args.get('game_id')
@@ -48,6 +51,7 @@ def stop_comments_handler():
     response_data, status_code = retrieve_comments_stop(data.get('taskId'))
     return jsonify(response_data), status_code
 
+# Returns all the available tags for a list of games
 @streams_bp.route('/tags', methods=['GET'])
 def get_all_tags_route():
     game_ids_param = request.args.get('game_id')
@@ -65,6 +69,7 @@ def get_all_tags_route():
     data, status_code = get_all_tags(crawl_id, game_ids, user_id, user_login, languages, "/streams/")
     return jsonify(data), status_code
 
+# Returns the streamers which are associated with the given tag list
 @streams_bp.route('/tags/search', methods=['GET'])
 def get_streams_by_tags_route():
     tags_param = request.args.get('tags', None)
@@ -89,23 +94,57 @@ def get_streams_by_tags_route():
     print(f"The total length is {len(resp)}")
     return jsonify({"data": resp}), status_code
 
+scheduler = BackgroundScheduler()
+scheduler.start()
+
+# A global dictionary to keep track of jobs
+jobs = {}
+
 @streams_bp.route('/comments/background', methods=['POST'])
-def create_task_background_route():
+def crawl_streams_background_route():
     data = request.get_json()
-    game_ids_str = data.get('game_id')
-    game_ids = [int(game_id) for game_id in game_ids_str.split(',')] if game_ids_str else []
-
-    languages_str = data.get('language', None)
-    languages = [str(lang) for lang in languages_str.split(',')] if languages_str else []
-
-    tags_str = data.get('tags', None)
-    tags = [str(tag) for tag in tags_str.split(',')] if tags_str else []
-
+    case_id = data.get('caseId')
+    task_id = data.get('taskId')
+    game_ids = data.get('game_ids')
+    languages = data.get('languages', None)
+    tags = data.get('tags', None)
+    tags = [tag.lower() for tag in tags]
     period = data.get('period', 6)
-    
-    # Here I want to call the create_task_background every 'period' hours
-    # Is an API so I want to run at background and continue the code
 
-    resp = "OK"
-    status_code = 200
-    return jsonify({"data": resp}), status_code
+    print(f"The games {game_ids}\nlangs {languages}\ntags {tags}\nperiod {period}")
+    job_id = f"crawl_streams_{len(jobs)+1}"
+
+    scheduler.add_job(
+            crawl_streams_background,
+            trigger=DateTrigger(run_date=datetime.datetime.now()),
+            args=[case_id, task_id, game_ids, languages, tags],
+            id=f"{job_id}_immediate",
+            replace_existing=True
+    )
+
+    jobs[job_id] = scheduler.add_job(
+        crawl_streams_background,
+        trigger=IntervalTrigger(hours=period),
+        args=[case_id, task_id, game_ids, languages, tags],
+        id=job_id,
+        replace_existing=True
+    )
+
+    print(f"Scheduled job {job_id} to run immediately and then every {period} hours")
+
+    return jsonify({"message": "Schedule started", "jobId": job_id})
+
+@streams_bp.route('/comments/background', methods=['DELETE'])
+def remove_job():
+    job_id = request.args.get('jobId')
+    task_id = request.args.get('taskId')
+    print(f"job id {job_id} and task id {task_id}")
+    if job_id in jobs:
+        scheduler.remove_job(job_id)
+        jobs.pop(job_id, None)
+
+        response_data, status_code = retrieve_comments_stop(task_id)
+        remove_taskId_from_already_crawled(task_id)
+        return jsonify(response_data), status_code
+    else:
+        return jsonify({"message": "Job ID not found"}), 404
