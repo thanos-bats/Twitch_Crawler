@@ -112,8 +112,8 @@ def crawl_streams_background_route():
     period = data.get('period', 6)
 
     print(f"The games {game_ids}\nlangs {languages}\ntags {tags}\nperiod {period}")
-    job_id = f"crawl_streams_{len(jobs)+1}"
-
+    job_id = task_id
+    if job_id in jobs: return jsonify({"error": "Task Id is already running"}), 400
     scheduler.add_job(
             crawl_streams_background,
             trigger=DateTrigger(run_date=datetime.datetime.now()),
@@ -131,17 +131,17 @@ def crawl_streams_background_route():
     )
 
     print(f"Scheduled job {job_id} to run immediately and then every {period} hours")
-
+    print(f"All the created job ids are:\n{jobs}\n\n")
     return jsonify({"message": "Schedule started", "jobId": job_id})
 
 @streams_bp.route('/comments/background', methods=['DELETE'])
 def remove_job():
-    job_id = request.args.get('jobId')
+    # job_id = request.args.get('jobId')
     task_id = request.args.get('taskId')
-    print(f"job id {job_id} and task id {task_id}")
-    if job_id in jobs:
-        scheduler.remove_job(job_id)
-        jobs.pop(job_id, None)
+    print(f"Task id {task_id}")
+    if task_id in jobs:
+        scheduler.remove_job(task_id)
+        jobs.pop(task_id, None)
 
         response_data, status_code = retrieve_comments_stop(task_id)
         remove_taskId_from_already_crawled(task_id)

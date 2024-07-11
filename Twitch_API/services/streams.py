@@ -61,8 +61,8 @@ def retrieve_comments_stop(crawling_id):
     # The crawling id is the same with TaskId
     connections = irc_connections.get(crawling_id)
     threads = irc_threads.get(crawling_id)
-    print(f"Threads {threads}")
-    print(f"Connections {connections}")
+    # print(f"\n\n\n====================================================\nThreads {threads}")
+    # print(f"Connections {connections}")
     if threads and connections:
         for irc_thread in threads: irc_thread.stop_flag = True
         for irc in connections: irc.close()
@@ -97,7 +97,7 @@ irc_threads = {}
 def retrieve_comments_start(caseId, crawling_id, channels): # The crawling id is the same with the Task id
     HOST = 'irc.chat.twitch.tv'
     PORT = 6667
-    print(f"CHANNERLS {channels}")
+    # print(f"CHANNERLS {channels}")
     if crawling_id not in irc_connections.keys():
         irc_connections[crawling_id] = []
 
@@ -127,8 +127,8 @@ def retrieve_comments_start(caseId, crawling_id, channels): # The crawling id is
     if crawling_id not in irc_threads: irc_threads[crawling_id] = []
     irc_threads[crawling_id].append(irc_thread)
 
-    print(irc_threads)
-    print(f'========================\n{irc_connections}')
+    # print(irc_threads)
+    # print(f'========================\n{irc_connections}')
     response_data = {
         'id': crawling_id,
         'channels': channels,
@@ -235,9 +235,9 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
                 else:
                     all_streams[crawl_id][int(item["game_id"])][tag] = [streamer]
     
-    #print(f"The all_streamers is {all_streams}\n")
+    print(f"The all_streamers is {all_streams}\n")
     data = {"all_tags": list(tags_to_return), "crawl_id": crawl_id}
-    print(f"--------\nall streams {all_streams}\n---------\n")
+    # print(f"--------\nall streams {all_streams}\n---------\n")
     return data, 200
 
 def get_streams_by_tags(tags, crawl_id, game_ids):
@@ -274,7 +274,8 @@ def evaluate_expression(tokens, crawl_id, game_id):
             values.append(left | right)
         elif operator == 'NOT':
             value = values.pop()
-            values.append(set() - value)
+            all_streamers = set(streamer for tag_streamers in all_streams[crawl_id][game_id].values() for streamer in tag_streamers)
+            values.append(all_streamers - value)
         
     if crawl_id not in all_streams:
         return {"Error": "The crawl id there isn't exists"}, 404
