@@ -26,7 +26,7 @@ def handle_messages(irc, crawling_id, channels, caseId): # The crawling_id is th
                 elif "PRIVMSG" in msg:
                     modified_message = modify_message(crawling_id, msg)
                     if modified_message:
-                        print("> ", modified_message, "\n")
+                        # print("> ", modified_message, "\n")
                         socketio.emit('message', { "data": modified_message, "channels": channels, "caseId": caseId, "taskId": crawling_id })
             
             stop_flag = getattr(threading.current_thread(), "stop_flag", False)
