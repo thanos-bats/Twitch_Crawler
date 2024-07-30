@@ -132,7 +132,7 @@ def crawl_streams_background_route():
 
     print(f"Scheduled job {job_id} to run immediately and then every {period} hours")
     print(f"All the created job ids are:\n{jobs}\n\n")
-    return jsonify({"message": "Schedule started", "jobId": job_id})
+    return jsonify({"message": "Background Task started", "taskId": job_id})
 
 @streams_bp.route('/comments/background', methods=['DELETE'])
 def remove_job():

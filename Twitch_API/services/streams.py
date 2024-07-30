@@ -12,10 +12,11 @@ def create_jobs_per_streamer(channels, taskId):
     } 
     for channel in channels:
         res, streamerName, status_code = create_job(channel, taskId)
-        if res.get('status') != "Success":
+        print(f"Res {res}\nstreamerName {streamerName} and status code {status_code}")
+        if res.get('error'):
             continue
         streamer_data["streamers"].append({"streamerName": res["data"]["user_name"], "jobId": res["data"]["id"], "lan": res["data"]["lan"], "user_login": streamerName})
-       
+    
     return streamer_data, status_code
 
 def create_job(data, taskId):
@@ -82,11 +83,16 @@ def retrieve_comments_stop(crawling_id):
 
         return response_data, status_code
     else:
-        response_data = {
-            "taskId": crawling_id,
-            'message': 'Connection not found. Please give a correct id'
-        }
-        return response_data, 404
+        task_info, status_code = get_task(crawling_id)
+        if task_info["data"]['status'] == "Completed": 
+            response_data = {
+                "taskId": crawling_id,
+                'message': 'Connection not found'
+            }
+            return response_data, 404
+        
+        response_data, status_code = update_statuses(crawling_id)
+        return response_data, status_code
     
 def send_command(irc, cmd):
     print(f'< {cmd}')
@@ -206,7 +212,7 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
 
     for language in languages:
         params = create_dict_from_vars(game_id=new_games, user_id=user_id, user_login=user_login, language=language)
-
+        
         response_data, response_status = get_data(url, params, headers, None, {"data": []})
         #print(f"For params \n{params}")
         if response_status != 200:
@@ -263,48 +269,55 @@ def get_streams_by_tags(tags, crawl_id, game_ids):
 
 def evaluate_expression(tokens, crawl_id, game_id):
     def apply_operator(operators, values):
-        operator = operators.pop().upper()
-        if operator == 'AND':
+        print(f"Current operators list inside the apply operator: {operators}\n")
+        operator = operators.pop()
+        if operator == 'and':
             right = values.pop()
             left = values.pop()
+            print(f"left {left} \nright {right}")
             values.append(left & right)
-        elif operator == 'OR':
+        elif operator == 'or':
             right = values.pop()
             left = values.pop()
             values.append(left | right)
-        elif operator == 'NOT':
+        elif operator == 'not':
             value = values.pop()
+            # Retrieve all streamers for the game_id and remove those in value
             all_streamers = set(streamer for tag_streamers in all_streams[crawl_id][game_id].values() for streamer in tag_streamers)
             values.append(all_streamers - value)
-        
+
     if crawl_id not in all_streams:
-        return {"Error": "The crawl id there isn't exists"}, 404
+        return {"Error": "The crawl id doesn't exist"}, 404
     
     operators = []
     values = []
     while tokens:
-        token = tokens.pop(0).strip()
+        token = tokens.pop(0).strip()#.lower()
         print(f"The token is {token}")
         if token == '(':
             operators.append(token)
+            print(f"Current operators list {operators}\n")
         elif token == ')':
             while operators and operators[-1] != '(':
+                print(f"Current operators list {operators}\n")
                 apply_operator(operators, values)
             operators.pop()  # Remove the '('
-        elif token.upper() in {'AND', 'OR', 'NOT'}:
-            while (operators and operators[-1] in {'AND', 'OR', 'NOT'} and
-                   (token != 'NOT' and operators[-1] != 'NOT')):
+        elif token in {'and', 'or', 'not'}:
+            while (operators and operators[-1] in {'and', 'or', 'not'} and (token != 'not' and operators[-1] != 'not')):
                 apply_operator(operators, values)
             operators.append(token)
+            print(f"Current operators list {operators}\n")
         else:
             streamers = set(get_streamers_for_keyword(game_id, token, crawl_id))
-            print(f"For the game id {game_id} The matched streamers for the token {token} are {len(streamers)}\n")
+            print(f"Current operators list {operators}\n")
+            print(f"For the game id {game_id}, the matched streamers for the token {token} are {len(streamers)}")
             values.append(streamers)
-    
+        
     while operators:
         apply_operator(operators, values)
     
-    if len(values) == 0: return values, 200
+    if len(values) == 0:
+        return [], 200
     
     data = list(values[0])
     streamers = []
@@ -335,6 +348,8 @@ def crawl_streams_background(case_id, task_id, game_ids, languages, tags):
     to_crawl = {
         "streamers": []
     }
+    
+    if len(filtered_data) == 0: return 
     for streamer in filtered_data:
         if streamer['user_login'] in already_crawled[task_id]: continue
         already_crawled[task_id].append(streamer['user_login'])
@@ -356,6 +371,11 @@ def crawl_streams_background(case_id, task_id, game_ids, languages, tags):
 
 def remove_taskId_from_already_crawled(taskId):
     already_crawled.pop(taskId, None)
+
+def get_task(taskId):
+    neo4j_url = os.getenv("NEO4J_URL")
+    res, status_code = make_request(f"{neo4j_url}/tasks",{"id": taskId}, None, None, "GET")
+    return res, status_code
 
 class Streamer:
     def __init__(self, data):
