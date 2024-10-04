@@ -3,6 +3,18 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from services.games import get_games
 import threading
 import datetime
+import os
+
+from dotenv import load_dotenv
+
+# Load environment variables from the .env file
+load_dotenv()
+
+print('===============================')
+for key, value in os.environ.items():
+    if key in os.environ:
+        print(f"{key}: {value}")
+print('===============================\n')
 
 app = create_app()
 scheduler = BackgroundScheduler()
