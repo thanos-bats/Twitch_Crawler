@@ -101,7 +101,10 @@ def handle_first_param(first, number):
     
     return 100, (number - first)
 
-def get_data(url, params, headers, after=None, data={"data": []}, first=100):
+def get_data(url, params, headers, after=None, data={"data": []}, first=100, times=0):
+    # if params["language"] == 'en':
+    times = times + 1
+    
     params["first"] = first
     if after is not None:
         params["after"] = after
@@ -124,8 +127,8 @@ def get_data(url, params, headers, after=None, data={"data": []}, first=100):
         return data, status_code
     
     after = json_data["pagination"]["cursor"]        
-
-    return get_data(url, params, headers, after=after, data=data)
+    if times >= 5: return data, status_code
+    return get_data(url, params, headers, after=after, data=data, times=times)
 
 def get_data_paginated(url, params, headers, number, after=None, data={"data": []}, first=100):
     params["first"], number = handle_first_param(first, number)
