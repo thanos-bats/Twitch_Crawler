@@ -10,11 +10,11 @@ from dotenv import load_dotenv
 # Load environment variables from the .env file
 load_dotenv()
 
-print('===============================')
-for key, value in os.environ.items():
-    if key in os.environ:
-        print(f"{key}: {value}")
-print('===============================\n')
+# print('===============================')
+# for key, value in os.environ.items():
+#     if key in os.environ:
+#         print(f"{key}: {value}")
+# print('===============================\n')
 
 app = create_app()
 scheduler = BackgroundScheduler()
@@ -31,7 +31,7 @@ def run_app():
     socketio.run(app, port=3000, host="0.0.0.0", use_reloader=False, allow_unsafe_werkzeug=True, debug=True)
 
 if __name__ == '__main__':
-    scheduler_thread = threading.Thread(target=run_scheduler)
-    scheduler_thread.start()
+    # scheduler_thread = threading.Thread(target=run_scheduler)
+    # scheduler_thread.start()
 
     run_app()

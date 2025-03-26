@@ -8,7 +8,7 @@ from services.streams import *
 from routes import streams_bp
 from utilities.utils import get_error_message, parse_query
 
-# Returns a paginated list of live streams for a specific game ids or a user id
+#  Returns a paginated list of live streams for a specific game ids or a user id
 @streams_bp.route('/', methods=['GET'])
 def get_game_streams():
     # game_id = request.args.get('game_id')

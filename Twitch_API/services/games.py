@@ -13,7 +13,6 @@ def get_games(after, games):
         "Client-ID": client_id,
         "Authorization": f"Bearer {access_token}"
     }
-
     if after is None:
         print(headers)
     if after is not None:
@@ -21,7 +20,7 @@ def get_games(after, games):
 
     response, status_code = make_request(url, params, headers)
     if (status_code == 401 or status_code == 500) and (not games["data"]):
-        print(f'{response}')
+        print(f'Error while getting games:\n{response}')
         return
     
     if response['data']:
