@@ -28,6 +28,7 @@ class SocketClient:
 
     def start(self):
         try:
+            print(f"Connecting to {os.getenv('SOCKET_URL')}")
             self.socket.connect(os.getenv('SOCKET_URL'))
             self.socket.wait()
         except Exception as e:

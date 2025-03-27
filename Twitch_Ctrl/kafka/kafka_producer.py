@@ -24,7 +24,7 @@ class ProducerHandler:
     def send_message(self, topic, message_data):
 
         message_json = json.dumps(message_data)
-        print(f"\n The message: {message_json}")
+        print(f"\nThe message: {message_json}")
         self.producer.produce(topic, value=message_json, callback=self.delivery_report)
         self.producer.flush()
 
@@ -41,7 +41,7 @@ class ProducerHandler:
 # print('Topic:', topic)
 
 # # Instantiate the MessageProducer
-# producer = MessageProducer(bootstrap_servers)
+# producer = ProducerHandler(bootstrap_servers)
 
 
 # # Send a message
@@ -49,4 +49,4 @@ class ProducerHandler:
 # producer.send_message(topic, message_data)
 
 # # Close the producer
-# producer.close_producer()
+# producer.close()

@@ -11,7 +11,7 @@ class MessageConsumer:
         self.consumer = Consumer({
             'bootstrap.servers': bootstrap_servers,
             'group.id': group_id,
-            'auto.offset.reset': 'latest'
+            'auto.offset.reset': 'earliest'
         })
 
     def consume_messages(self, topic):
