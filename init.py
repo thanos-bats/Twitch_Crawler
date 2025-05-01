@@ -8,7 +8,7 @@ def db_config():
     db_uri = os.getenv("MONGO_DB")
     db_name = os.getenv("MONGO_DB_NAME")
     collection_name = os.getenv("MONGO_COLLECTION_NAME")
-    print(db_uri, db_name, collection_name)
+
     # Check if the URI starts with 'mongodb://' or 'mongodb+srv://'
     if not db_uri.startswith("mongodb://") and not db_uri.startswith("mongodb+srv://"):
         raise ValueError("Invalid MongoDB URI. Must start with 'mongodb://' or 'mongodb+srv://'")

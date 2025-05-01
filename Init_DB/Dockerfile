@@ -5,5 +5,5 @@ COPY . .
 
 RUN pip install -r requirements.txt
 
-CMD ["python", "init.py"]
+CMD ["python", "-u","init.py"]
 EXPOSE 3000

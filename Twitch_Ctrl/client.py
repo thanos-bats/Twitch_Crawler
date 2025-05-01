@@ -96,7 +96,7 @@ class SocketClient:
         except Exception as e:
             print(f"An unexpected error occurred: {e}")
 
-    def generate_message_tas_results(self, sentUtc, streamer, caseId, taskId, jobId, documentId):
+    def generate_message_results(self, sentUtc, streamer, caseId, taskId, jobId, documentId):
         msg = {
             "header": {
                 "topicName":os.getenv("TOPIC_MESSAGE_DONE"),
@@ -120,7 +120,7 @@ class SocketClient:
         return os.getenv("TOPIC_MESSAGE_DONE"), msg
 
     def send_message_to_kafka(self, streamer_name, caseId, taskId, jobId, docId):
-        topic, message = self.generate_message_tas_results(
+        topic, message = self.generate_message_results(
             datetime.datetime.utcnow().isoformat().split(".")[0] + 'Z',
             streamer_name,
             caseId, 

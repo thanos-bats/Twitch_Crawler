@@ -16,17 +16,30 @@ class ProducerHandler:
         self.producer = Producer(conf)
 
     def delivery_report(self, err, msg):
+        """Called once for each message produced to indicate delivery result.
+        Triggered by poll() or flush()."""
         if err is not None:
-            print('Message delivery failed: {}'.format(err))
+            print(f'Message delivery failed: {err}')
+            print(f'Failed message details: Topic={msg.topic()}, Partition={msg.partition()}, Offset={msg.offset()}')
         else:
-            print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
+            print(f'Message delivered to {msg.topic()} [{msg.partition()}] at offset {msg.offset()}')
 
     def send_message(self, topic, message_data):
-
-        message_json = json.dumps(message_data)
-        print(f"\nThe message: {message_json}")
-        self.producer.produce(topic, value=message_json, callback=self.delivery_report)
-        self.producer.flush()
+        try:
+            message_json = json.dumps(message_data)
+            print(f"\nSending message to topic {topic}: {message_json}")
+            
+            # Produce the message
+            self.producer.produce(topic, value=message_json, callback=self.delivery_report)
+            
+            # Wait for any outstanding messages to be delivered and delivery reports to be received
+            self.producer.flush()
+            
+        except Exception as e:
+            print(f"Error producing message to Kafka: {str(e)}")
+            print(f"Topic: {topic}")
+            print(f"Message data: {message_data}")
+            raise  # Re-raise the exception to allow caller to handle it
 
     def close(self):
         if self.producer is not None:
