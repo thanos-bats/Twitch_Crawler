@@ -92,6 +92,8 @@ def get_streams_by_tags_route():
         resp.extend(data)
 
     print(f"The total length is {len(resp)}")
+    print(f"The response is {resp}")
+    resp.sort(key=lambda x: x.get('viewer_count', 0), reverse=True)
     return jsonify({"data": resp}), status_code
 
 scheduler = BackgroundScheduler()

@@ -19,7 +19,8 @@ services:
       - twitch_db
     environment:
       - MONGO_DB=mongodb://twitch_db:27017
-
+      - MONGO_DB_NAME=games
+      - MONGO_COLLECTION_NAME=games_collection
 
   twitch_api:
     build:
@@ -36,7 +37,7 @@ services:
       - MONGO_DB=mongodb://twitch_db:27017/
       # - NEO4J_URL=http:///160.40.53.99:4567
       # - LANG_DETECT_URL=http:///160.40.53.99:12020/detect
-      - LANG_DETECT_URL=http:///lang-detector:12020/detect
+      - LANG_DETECT_URL=http://lang-detector:12020/detect
       - NEO4J_URL=http://neo4j-api:4567
     #restart: unless-stopped
 
@@ -52,7 +53,7 @@ services:
       - SOCKET_URL=http://twitch_api:3000
       # - BOOTSTRAP_SERVERS=160.40.53.99:9092
       # - NEO4J_URL=http://160.40.53.99:4567
-      - BOOTSTRAP_SERVERS=broker:29092
+      - BOOTSTRAP_SERVERS=kafka:9093
       - NEO4J_URL=http://neo4j-api:4567
 
 volumes:

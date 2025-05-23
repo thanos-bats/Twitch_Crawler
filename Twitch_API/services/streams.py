@@ -34,6 +34,7 @@ def create_job(data, taskId):
     return res, streamerName, status_code
 
 def get_streams(game_id, number_of_results, user_id, user_login, language, cursor, endpoint):
+    # TODO: Add the language to the params
     client_id, access_token, base_url, _ = get_dotenv()
     url = f"{base_url}{endpoint}"
     headers = {
@@ -170,10 +171,32 @@ def update_statuses(taskId):
 
 all_streams = {}
 def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
-    global all_tags
+    global all_streams
     tags_to_return = set()
+    print(f"The crawl id is {crawl_id} | game_id {game_id}| languages {languages}")
+    print(f"Currently saved crawl IDs: {list(all_streams.keys())}")
     if not crawl_id:
-        all_streams.clear()
+        # Check if game_id list and language match any existing crawl_id
+        for existing_crawl_id, crawl_data in all_streams.items():
+            # Get all languages from the existing crawl data
+            existing_languages = set()
+            for game_data in crawl_data.values():
+                for streamers in game_data.values():
+                    for streamer in streamers:
+                        existing_languages.add(streamer.data.get('language', ''))
+            
+            # Check if both game_ids and languages match
+            if set(crawl_data.keys()) == set(game_id) and set(languages) == existing_languages:
+                print(f"Found matching crawl_id {existing_crawl_id} for game_ids {game_id} and languages {languages}")
+                tags_to_return = set()
+                for game_data in crawl_data.values():
+                    tags_to_return.update(game_data.keys())
+                return {"all_tags": list(tags_to_return), "crawl_id": existing_crawl_id}, 200
+
+        # Keep only the last 3 crawl IDs
+        if len(all_streams) >= 3:
+            oldest_key = next(iter(all_streams))
+            del all_streams[oldest_key]
 
         crawl_id = ''.join(random.choices(string.ascii_letters + string.digits, k=10))
         print(f"Random Id: {crawl_id}")
@@ -212,7 +235,7 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
 
     for language in languages:
         params = create_dict_from_vars(game_id=new_games, user_id=user_id, user_login=user_login, language=language)
-        
+        print(f"The params are {params}")
         response_data, response_status = get_data(url, params, headers, None, {"data": []})
         #print(f"For params \n{params}")
         if response_status != 200:
@@ -241,9 +264,10 @@ def get_all_tags(crawl_id, game_id, user_id, user_login, languages, endpoint):
                 else:
                     all_streams[crawl_id][int(item["game_id"])][tag] = [streamer]
     
-    print(f"The all_streamers is {all_streams}\n")
+    # print(f"The all_streamers is {all_streams}\n")
     data = {"all_tags": list(tags_to_return), "crawl_id": crawl_id}
     # print(f"--------\nall streams {all_streams}\n---------\n")
+    print(f"Saved crawl IDs after operation: {list(all_streams.keys())}")
     return data, 200
 
 def get_streams_by_tags(tags, crawl_id, game_ids):
@@ -257,14 +281,16 @@ def get_streams_by_tags(tags, crawl_id, game_ids):
         for tag in tags:
             if tag in tags_data:
                 filtered_streamers.extend(tags_data[tag])
-    print(filtered_streamers)
 
     filtered_streamers = list({id(streamer): streamer for streamer in filtered_streamers}.values())
+    
     data = {"data": []}
     for streamer in filtered_streamers:
         data["data"].append(streamer.to_dict())
     
-        
+    # Sort the data by viewer_count in descending order
+    # data["data"].sort(key=lambda x: x.get('viewer_count', 0), reverse=True)
+    
     return data, 200
 
 def evaluate_expression(tokens, crawl_id, game_id):
