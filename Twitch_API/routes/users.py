@@ -14,4 +14,6 @@ def search_user():
         return get_error_message('user_name or user_id')
     
     data, status_code = get_user(user_name, user_id, request.path)
+    print(f"The User data is {len(data)}\nwith status code {status_code}")
+
     return jsonify(data), status_code

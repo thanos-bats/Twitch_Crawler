@@ -16,4 +16,6 @@ def get_game_videos():
         return get_error_message('game_id or user_id')
         
     data, status_code = get_videos(game_id, number_of_results, user_id, request.path, sorting_type)
+    print(f"The video data is {len(data['data'])}\nwith status code {status_code}")
+
     return jsonify(data), status_code
