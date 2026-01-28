@@ -8,7 +8,7 @@ def get_user(user_name, user_id, endpoint):
         "Client-ID": client_id,
         "Authorization": f"Bearer {access_token}"
     }
-    
+    print(f"The headers are {headers}")
     response, status_code = make_request(url, params, headers)
     if status_code != 200:
         return response, status_code

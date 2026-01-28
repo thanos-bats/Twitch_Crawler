@@ -9,7 +9,8 @@ def get_videos(game_id, number_of_results, user_id, endpoint, sorting_type):
     }
     params = create_dict_from_vars(game_id=game_id, user_id=user_id, sort=sorting_type)
 
-    response_data, response_status = get_data(url, params, headers, number_of_results, None, {"data": []})
+    # Fetch videos with correct argument order: after=None, data accumulator, first=number_of_results
+    response_data, response_status = get_data(url, params, headers, None, {"data": []}, number_of_results)
 
     if response_status != 200:
         return response_data, response_status
