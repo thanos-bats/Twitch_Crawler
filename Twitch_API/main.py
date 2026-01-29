@@ -15,6 +15,7 @@ app = create_app()
 scheduler = BackgroundScheduler()
 
 TOKEN_URL = "https://safeguard-platform.m4d.iti.gr/auth/realms/SAFEGUARD/protocol/openid-connect/token"
+TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 
 
 def _persist_neo4j_tokens(access_token: str, refresh_token: str | None) -> None:
@@ -56,6 +57,81 @@ def _persist_neo4j_tokens(access_token: str, refresh_token: str | None) -> None:
         print("NEO4J_TOKEN and NEO4J_REFRESH_TOKEN persisted to .env.")
     except OSError as e:
         print(f"WARNING: Failed to persist Neo4j tokens to .env: {e}")
+
+
+def _persist_twitch_access_token(access_token: str) -> None:
+    """
+    Store Twitch access token in process env and persist it to the project .env file.
+    """
+    # Store in process environment for this runtime
+    os.environ["ACCESS_TOKEN"] = access_token
+
+    # Also persist to the .env file at the project root
+    try:
+        # main.py is under Twitch_API/, project root is one level up
+        project_root = os.path.dirname(os.path.dirname(__file__))
+        env_path = os.path.join(project_root, ".env")
+
+        lines: list[str] = []
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                lines = f.read().splitlines()
+
+        prefix = "ACCESS_TOKEN="
+        for i, line in enumerate(lines):
+            if line.startswith(prefix):
+                lines[i] = f"{prefix}{access_token}"
+                break
+        else:
+            lines.append(f"{prefix}{access_token}")
+
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+
+        print("Twitch ACCESS_TOKEN persisted to .env.")
+    except OSError as e:
+        print(f"WARNING: Failed to persist Twitch ACCESS_TOKEN to .env: {e}")
+
+
+def generate_twitch_access_token() -> None:
+    """
+    Generate a Twitch app access token using the client_credentials grant and
+    update both env vars and .env file.
+    """
+    client_id = os.getenv("CLIENT_ID")
+    client_secret = os.getenv("CLIENT_SECRET")
+
+    if not all([client_id, client_secret]):
+        print(
+            "WARNING: Missing one or more Twitch auth env vars "
+            "(CLIENT_ID, CLIENT_SECRET). Skipping ACCESS_TOKEN generation."
+        )
+        return
+
+    data = {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "grant_type": "client_credentials",
+    }
+
+    try:
+        response = requests.post(TWITCH_TOKEN_URL, data=data)
+        response.raise_for_status()
+        body = response.json()
+        access_token = body.get("access_token")
+        expires_in = body.get("expires_in")
+
+        if not access_token:
+            print("WARNING: Twitch token response did not contain 'access_token'.")
+            return
+
+        _persist_twitch_access_token(access_token)
+        print(
+            f"Twitch ACCESS_TOKEN successfully generated and stored. "
+            f"expires_in={expires_in}"
+        )
+    except requests.RequestException as e:
+        print(f"ERROR: Failed to generate Twitch ACCESS_TOKEN: {e}")
 
 
 def generate_neo4j_token() -> None:
@@ -152,11 +228,17 @@ def run_scheduler() -> None:
         #     trigger="interval",
         #     hours=3,
         # )
-        # Refresh Neo4j tokens every 15 minutes
+        # Refresh Neo4j tokens every 20 minutes
         scheduler.add_job(
             func=refresh_neo4j_token,
             trigger="interval",
             minutes=20,
+        )
+        # Rotate Twitch app access token every 50 days
+        scheduler.add_job(
+            func=generate_twitch_access_token,
+            trigger="interval",
+            days=50,
         )
         print("Scheduler started at ", datetime.datetime.now())
         scheduler.start()
@@ -175,7 +257,7 @@ def run_app() -> None:
 
 
 if __name__ == "__main__":
-    # Initial Neo4j token generation on startup
+    generate_twitch_access_token()
     generate_neo4j_token()
 
     # Start background scheduler for games + token refresh
