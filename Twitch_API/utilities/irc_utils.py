@@ -26,7 +26,7 @@ def handle_messages(irc, crawling_id, channels, caseId): # The crawling_id is th
                 elif "PRIVMSG" in msg:
                     modified_message = modify_message(crawling_id, msg)
                     if modified_message:
-                        # print("> ", modified_message, "\n")
+                        print("> ", modified_message, "\n")
                         socketio.emit('message', { "data": modified_message, "channels": channels, "caseId": caseId, "taskId": crawling_id })
             
             stop_flag = getattr(threading.current_thread(), "stop_flag", False)
@@ -42,12 +42,12 @@ def modify_message(crawling_id, data):
     username = match.group('username')
     streamer = match.group('streamer')
     message = match.group('message').strip()
-    __detect_data = detect_language(username, message)
-    if "error" in __detect_data:
-        language = "und"
-    else: 
-        language = __detect_data[username]
-        
+    # __detect_data = detect_language(username, message)
+    # if "error" in __detect_data:
+    #     language = "und"
+    # else: 
+    #     language = __detect_data[username]
+    language = "und"   
     data = {
         "id": crawling_id,
         "streamer": streamer, 
