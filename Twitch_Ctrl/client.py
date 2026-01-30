@@ -45,9 +45,25 @@ class SocketClient:
         caseId = data.get('caseId')
         taskId = data.get('taskId')
 
-        for streamer_data in channels: 
-            if streamer_data.get('streamerName') == streamer_name:
-                jobId = streamer_data.get('jobId')
+        # Try to resolve jobId by matching hashed streamer name; if that fails,
+        # fall back to the first channel's jobId so we never leave jobId undefined.
+        jobId = None
+        if channels:
+            for idx, streamer_data in enumerate(channels):
+                chan_name = streamer_data.get('streamerName')
+                if chan_name == streamer_name:
+                    jobId = streamer_data.get('jobId')
+                    print(f"[handle_message] MATCH on index {idx}, jobId={jobId}")
+                    break
+
+            if jobId is None:
+                # Fallback: use the first channel's jobId
+                print("[handle_message] WARNING: No channel matched hashed streamer; "
+                      "falling back to first channel jobId.")
+                jobId = channels[0].get('jobId')
+        else:
+            print("[handle_message] ERROR: No channels provided in message; cannot determine jobId.")
+            return
 
         document_data = {
             "jobId": jobId,
@@ -59,7 +75,7 @@ class SocketClient:
             "type": "twitch:comment",
             "publishedAt": msg_data.get("created_at"),
             "discoveredAt": msg_data.get("created_at"),
-            "lang": msg_data.get("lang"),
+            "lan": msg_data.get("lang"),
             "attributes": {
                 "authorName": msg_data['username']
             }
@@ -90,7 +106,7 @@ class SocketClient:
             
             _, _ = make_request(f"{os.getenv('NEO4J_URL')}/relationships", None, None, relationship_data, "POST")
 
-            self.send_message_to_kafka(streamer_name, caseId, taskId, jobId, docId)
+            # self.send_message_to_kafka(streamer_name, caseId, taskId, jobId, docId)
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")
         except Exception as e:
