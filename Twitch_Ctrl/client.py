@@ -4,6 +4,7 @@ import datetime
 import requests
 import hashlib
 import re
+import random
 
 from socketio.client import Client
 from dotenv import load_dotenv
@@ -14,7 +15,7 @@ load_dotenv()
 class SocketClient:
     def __init__(self):
         self.socket = Client()
-        self.producer = ProducerHandler()
+        # self.producer = ProducerHandler()
 
         self.socket.on('connect', self.handle_connect)
         self.socket.on('disconnect', self.handle_disconnect)
@@ -38,6 +39,7 @@ class SocketClient:
         # Data's structure { "data": {Message content}, "channels": [{"streamerName": Name, "jobId": id, "lan": Language}], "caseId": caseId, "taskId": taskId}
         
         sha_data = pseudo_anonymize(data)
+
         streamer_name = sha_data['data']['streamer']
         msg_data = sha_data.get('data')
         hash_streamer_name = msg_data.get('streamer', 'unknown_streamer')
@@ -77,7 +79,8 @@ class SocketClient:
             "discoveredAt": msg_data.get("created_at"),
             "lan": msg_data.get("lang"),
             "attributes": {
-                "authorName": msg_data['username']
+                "authorName": msg_data['username'],
+                "authorColor": get_random_color()
             }
         }
         
@@ -213,6 +216,13 @@ def calculate_sha(input):
     sha512_hex = sha512_hash.hexdigest()
 
     return sha512_hex
+
+def get_random_color():
+    letters = '0123456789ABCDEF'
+    color = '#'
+    for i in range(6):
+        color += letters[random.randint(0, 15)]
+    return color
 
 if __name__ == '__main__':
     socket_client = SocketClient()
