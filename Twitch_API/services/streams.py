@@ -11,15 +11,20 @@ def create_jobs_per_streamer(channels, taskId):
         "streamers": []
     } 
     for channel in channels:
+        # Pop the incoming Twitch stream id and created_at from the payload (if present)
+        channel.pop("id", None)
+        channel.pop("createdAt", None)
+
         res, streamerName, status_code = create_job(channel, taskId)
-        print(f"Res {res}\nstreamerName {streamerName} and status code {status_code}")
+        print(f"> Create job:\n {res}\n> Status code {status_code}\n\n")
         if res.get('error'):
             continue
         # Neo4j may return 'user_name' (hashed) rather than 'username'
         user_name = res.get("data", {}).get("user_name") or calculate_sha(streamerName)
         streamer_data["streamers"].append({
             "streamerName": user_name,
-            "jobId": res["data"]["id"],
+            # Use the original stream id as jobId for downstream consumers (e.g. Twitch_Ctrl)
+            "jobId": res['data']['id'],
             "lan": res["data"]["lan"],
             "user_login": streamerName,
         })
@@ -37,19 +42,11 @@ def create_job(data, taskId):
     data["status"] = "Active"
     data["type"] = "twitch:stream"
     data["source"] = "twitch"
-
-    # Pseudo‑anonymize the username as 'user_name' (what Neo4j expects/returns)
-    if streamerName:
-        data["user_name"] = calculate_sha(streamerName)
-
-    # Normalize URL field: API sends "url", DB expects a list "urls"
-    if "url" in data and "urls" not in data:
-        data["urls"] = [data["url"]]
-        data.pop("url", None)
-
-    # Remove raw username/streamerName from the payload we send to Neo4j
     data.pop("streamerName", None)
     data.pop("username", None)
+    # Pseudo‑anonymize the username as 'user_name' (what Neo4j expects/returns)
+    if streamerName:
+        data["username"] = calculate_sha(streamerName)
 
     # return data, 202
     res, status_code = make_request(f"{neo4j_url}/jobs", None, None, data, "POST")
@@ -132,7 +129,7 @@ def retrieve_comments_start(caseId, crawling_id, channels): # The crawling id is
     # print(f"CHANNERLS {channels}")
     if crawling_id not in irc_connections.keys():
         irc_connections[crawling_id] = []
-
+    
     irc = socket.socket()
     irc.connect((HOST, PORT))
     irc_connections[crawling_id].append(irc)
@@ -181,7 +178,6 @@ def update_statuses(taskId):
     res, status_code = make_request(f"{neo4j_url}/jobs", {"taskId": taskId}, None, None, "GET")
     if res.get('status') != "Success" or status_code != 200:
         return {'message': 'Failed to retrieve jobs', 'error': res}, status_code
-    print(f"res for GET JOBS {res} and status code {status_code}")
 
     # Response shape: {'status': 'Success', 'data': {'data': [<job dicts>], ...}}
     jobs_container = res.get('data') or {}
@@ -197,7 +193,7 @@ def update_statuses(taskId):
             "status": "Completed"
         }
         res, status_code = make_request(f"{neo4j_url}/jobs", None, None, payload, "PATCH")
-        print(f"res for PATCH JOBS {res} and status code {status_code}")
+
         if res.get('status') != "Success" or status_code != 200:
             return {'message': f'Failed to update job status for job ID {job_id}', 'error': res}, status_code
 
