@@ -31,11 +31,10 @@ def get_game_streams():
 @streams_bp.route('/comments/start', methods=['POST'])
 def start_comments_handler():
     data = request.get_json()
-
     if not data.get('caseId') and not data.get('taskId') and not data.get('streamers'):
         return get_error_message('caseId, taskId and streamers list')
-    
     streamers_data, status_code = create_jobs_per_streamer(data.get("streamers"), data.get("taskId"))
+
     if len(streamers_data["streamers"]) == 0:
         return get_error_message("No Job created into the DB")
     response_data, status_code = retrieve_comments_start(data.get('caseId'), data.get('taskId'), streamers_data.get('streamers'))
@@ -92,7 +91,6 @@ def get_streams_by_tags_route():
         resp.extend(data)
 
     print(f"The total length is {len(resp)}")
-    print(f"The response is {resp}")
     resp.sort(key=lambda x: x.get('viewer_count', 0), reverse=True)
     return jsonify({"data": resp}), status_code
 

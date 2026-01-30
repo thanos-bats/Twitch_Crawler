@@ -24,6 +24,7 @@ def handle_messages(irc, crawling_id, channels, caseId): # The crawling_id is th
                 elif ("JOIN" in msg) and not ("PRIVMSG" in msg):
                     print(f'> {msg}')
                 elif "PRIVMSG" in msg:
+                    print(f"message: {msg}")
                     modified_message = modify_message(crawling_id, msg)
                     if modified_message:
                         print("> ", modified_message, "\n")
