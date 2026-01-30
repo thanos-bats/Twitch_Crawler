@@ -37,7 +37,6 @@ class SocketClient:
     
     def handle_message(self, data):
         # Data's structure { "data": {Message content}, "channels": [{"streamerName": Name, "jobId": id, "lan": Language}], "caseId": caseId, "taskId": taskId}
-        
         sha_data = pseudo_anonymize(data)
 
         streamer_name = sha_data['data']['streamer']
@@ -150,13 +149,18 @@ class SocketClient:
 
 def make_request(url, params=None, headers=None, data=None, method="GET"):
     try:
-        # Automatically attach Neo4j bearer token for Neo4j requests
+        # Automatically attach Neo4j bearer token for Neo4j requests.
+        # The token is fetched from the Twitch_API service, which is
+        # responsible for generating and refreshing it.
         neo4j_url = os.getenv("NEO4J_URL")
-        neo4j_token = os.getenv("NEO4J_TOKEN")
-        if neo4j_url and neo4j_token and url.startswith(neo4j_url):
-            # Preserve any headers passed by the caller and avoid overwriting Authorization if already set
+        if neo4j_url and url.startswith(neo4j_url):
             headers = headers.copy() if headers else {}
-            headers.setdefault("Authorization", f"Bearer {neo4j_token}")
+
+            neo4j_token = get_neo4j_token()
+            if neo4j_token:
+                headers.setdefault("Authorization", f"Bearer {neo4j_token}")
+            else:
+                print("WARNING: Could not obtain Neo4j token; proceeding without Authorization header.")
 
         if method.upper() == 'GET':
             response = requests.get(url, params=params, headers=headers)
@@ -194,6 +198,30 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
             }
         return error_data, 500
     
+
+def get_neo4j_token() -> str | None:
+    provider_url = os.getenv("NEO4J_TOKEN_PROVIDER_URL")
+
+    # First, try the provider endpoint (recommended in docker-compose).
+    if provider_url:
+        try:
+            resp = requests.get(provider_url, timeout=5)
+            resp.raise_for_status()
+            body = resp.json()
+            token = body.get("token")
+            if token:
+                return token
+            print(f"WARNING: Token provider response missing 'token' field: {body}")
+        except Exception as e:
+            print(f"WARNING: Failed to fetch Neo4j token from provider {provider_url}: {e}")
+
+    # Fallback: use static env value, if present.
+    fallback = os.getenv("NEO4J_TOKEN")
+    if not fallback:
+        print("WARNING: No NEO4J_TOKEN available in environment.")
+        return None
+    return fallback
+
 def pseudo_anonymize(data):
     streamer_hash = calculate_sha(data['data']['streamer'])
     data['data']['streamer'] = streamer_hash
