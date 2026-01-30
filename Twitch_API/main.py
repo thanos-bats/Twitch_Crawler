@@ -1,6 +1,7 @@
 from app import create_app, socketio
 from apscheduler.schedulers.background import BackgroundScheduler
 from services.games import get_games
+from flask import jsonify
 import threading
 import datetime
 import os
@@ -219,6 +220,18 @@ def refresh_neo4j_token() -> None:
         print(f"ERROR: Failed to refresh Neo4j token: {e}")
 
 
+@app.route("/internal/neo4j/token", methods=["GET"])
+def get_current_neo4j_token():
+    """
+    Internal endpoint (same docker network) for other services
+    to retrieve the latest Neo4j access token managed by this API.
+    """
+    token = os.getenv("NEO4J_TOKEN")
+    if not token:
+        return jsonify({"error": "NEO4J_TOKEN not available"}), 500
+    return jsonify({"token": token}), 200
+
+
 def run_scheduler() -> None:
     with app.app_context():
         # get_games(None, {"data": []})
@@ -257,10 +270,10 @@ def run_app() -> None:
 
 
 if __name__ == "__main__":
-    generate_twitch_access_token()
+    # generate_twitch_access_token()
     generate_neo4j_token()
 
-    # Start background scheduler for games + token refresh
+    # Start background scheduler for games + token refresh + twitch access token
     scheduler_thread = threading.Thread(target=run_scheduler)
     scheduler_thread.start()
 
