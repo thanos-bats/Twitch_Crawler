@@ -5,6 +5,7 @@ import requests
 import hashlib
 import re
 import random
+import time
 
 from socketio.client import Client
 from dotenv import load_dotenv
@@ -28,12 +29,18 @@ class SocketClient:
         print('You disconnect from the server')
 
     def start(self):
-        try:
-            print(f"Connecting to {os.getenv('SOCKET_URL')}")
-            self.socket.connect(os.getenv('SOCKET_URL'))
-            self.socket.wait()
-        except Exception as e:
-            print('> Error connecting: ', e)
+        socket_url = os.getenv('SOCKET_URL')
+        # Retry until twitch_api is reachable (handles container start-up race).
+        while True:
+            try:
+                print(f"Connecting to {socket_url}")
+                self.socket.connect(socket_url)
+                self.socket.wait()
+                break
+            except Exception as e:
+                print('> Error connecting: ', e)
+                print('> Retrying in 5 seconds...')
+                time.sleep(5)
     
     def handle_message(self, data):
         # Data's structure { "data": {Message content}, "channels": [{"streamerName": Name, "jobId": id, "lan": Language}], "caseId": caseId, "taskId": taskId}
