@@ -15,7 +15,9 @@ load_dotenv()
 app = create_app()
 scheduler = BackgroundScheduler()
 
-TOKEN_URL = "https://safeguard-platform.m4d.iti.gr/auth/realms/SAFEGUARD/protocol/openid-connect/token"
+# Keycloak realm base URL (e.g. https://safeguard-platform.m4d.iti.gr/auth/realms/SAFEGUARD)
+KEYCLOAK_URL = os.getenv("KEYCLOAK_URL", "").rstrip("/")
+TOKEN_URL = f"{KEYCLOAK_URL}/protocol/openid-connect/token"
 TWITCH_TOKEN_URL = "https://id.twitch.tv/oauth2/token"
 
 
@@ -149,6 +151,10 @@ def generate_neo4j_token() -> None:
         )
         return
 
+    if not KEYCLOAK_URL:
+        print("WARNING: KEYCLOAK_URL is not set. Skipping initial NEO4J_TOKEN generation.")
+        return
+
     data = {
         "grant_type": "password",
         "client_id": client_id,
@@ -191,6 +197,10 @@ def refresh_neo4j_token() -> None:
             "WARNING: Cannot refresh Neo4j token; missing one of "
             "NEO4J_CLIENT_ID, NEO4J_CLIENT_SECRET, NEO4J_REFRESH_TOKEN."
         )
+        return
+
+    if not KEYCLOAK_URL:
+        print("WARNING: KEYCLOAK_URL is not set. Cannot refresh Neo4j token.")
         return
 
     data = {
@@ -270,7 +280,7 @@ def run_app() -> None:
 
 
 if __name__ == "__main__":
-    # generate_twitch_access_token()
+    generate_twitch_access_token()
     generate_neo4j_token()
 
     # Start background scheduler for games + token refresh + twitch access token

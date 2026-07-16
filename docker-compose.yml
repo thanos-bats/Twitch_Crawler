@@ -26,7 +26,7 @@ services:
     build:
       context: ./Twitch_API
       dockerfile: Dockerfile
-    image: cesagram/m4d/twitch_api:2.0
+    image: cesagram/m4d/twitch_api:4.0
     ports:
       - 3000:3000
     container_name: twitch_api
@@ -35,26 +35,49 @@ services:
         condition: service_completed_successfully
     environment:
       - MONGO_DB=mongodb://twitch_db:27017/
-      # - NEO4J_URL=http:///160.40.53.99:4567
-      # - LANG_DETECT_URL=http:///160.40.53.99:12020/detect
-      - LANG_DETECT_URL=http://lang-detector:12020/detect
-      - NEO4J_URL=http://neo4j-api:4567
+      - MONGO_DB_NAME=games
+      - MONGO_COLLECTION_NAME=games_collection
+      # Twitch API credentials (set directly here)
+      # NOTE: avoid committing real secrets to version control.
+      - CLIENT_ID=kt2stxc5suufpa6mrldardd9fjdlff
+      - CLIENT_SECRET=ugqjw0i3wmng7igeb7junwffci5ezv
+      - ACCESS_TOKEN=d6ni3ys9ddlgfeur67waqr4d1dxi24
+      - BASE_URL=https://api.twitch.tv/helix
+      - IGDB_URL=https://api.igdb.com/v4
+      - LANG_DETECT_URL=http:///160.40.53.99:12020/detect
+      - NEO4J_URL= https://dev1.m4d.iti.gr/osint/db/
+      - KEYCLOAK_URL=https://safeguard-platform.m4d.iti.gr/auth/realms/SAFEGUARD
+      - NEO4J_TOKEN=eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI4UTZDY1lsSzNES2tDeVMyRF9nYlBhX29KcXNxR0lwTGhHU2I3azF4ckhNIn0.eyJleHAiOjE3Njk3MTEyMDUsImlhdCI6MTc2OTY4MjQwNSwianRpIjoiNmE2NTNiZGItNTFjYy00MGJiLTgzNzMtYmNmMDM0YmJkNDM3IiwiaXNzIjoiaHR0cHM6Ly9zYWZlZ3VhcmQtcGxhdGZvcm0ubTRkLml0aS5nci9hdXRoL3JlYWxtcy9TQUZFR1VBUkQiLCJhdWQiOlsicmVhbG0tbWFuYWdlbWVudCIsImFjY291bnQiXSwic3ViIjoiNjc5MzRhMjctMDliNC00OGI5LWIyNjAtMzM3NmI1MzdhMjMyIiwidHlwIjoiQmVhcmVyIiwiYXpwIjoic2RtYS1hcGkiLCJzaWQiOiIwMzU4ZWI4OS03YTViLTQ1OGEtYmViNC0zNmVmNDA4MGVjNGQiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbIi8qIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJvc2ludC1hZG1pbiIsIm9mZmxpbmVfYWNjZXNzIiwiZGVmYXVsdC1yb2xlcy1zYWZlZ3VhcmQiLCJ1bWFfYXV0aG9yaXphdGlvbiJdfSwicmVzb3VyY2VfYWNjZXNzIjp7InJlYWxtLW1hbmFnZW1lbnQiOnsicm9sZXMiOlsidmlldy1yZWFsbSIsInZpZXctaWRlbnRpdHktcHJvdmlkZXJzIiwibWFuYWdlLWlkZW50aXR5LXByb3ZpZGVycyIsImltcGVyc29uYXRpb24iLCJyZWFsbS1hZG1pbiIsImNyZWF0ZS1jbGllbnQiLCJtYW5hZ2UtdXNlcnMiLCJxdWVyeS1yZWFsbXMiLCJ2aWV3LWF1dGhvcml6YXRpb24iLCJxdWVyeS1jbGllbnRzIiwicXVlcnktdXNlcnMiLCJtYW5hZ2UtZXZlbnRzIiwibWFuYWdlLXJlYWxtIiwidmlldy1ldmVudHMiLCJ2aWV3LXVzZXJzIiwidmlldy1jbGllbnRzIiwibWFuYWdlLWF1dGhvcml6YXRpb24iLCJtYW5hZ2UtY2xpZW50cyIsInF1ZXJ5LWdyb3VwcyJdfSwiYWNjb3VudCI6eyJyb2xlcyI6WyJtYW5hZ2UtYWNjb3VudCIsIm1hbmFnZS1hY2NvdW50LWxpbmtzIiwidmlldy1wcm9maWxlIl19fSwic2NvcGUiOiJlbWFpbCBvZmZsaW5lX2FjY2VzcyBwcm9maWxlIiwiZW1haWxfdmVyaWZpZWQiOmZhbHNlLCJuYW1lIjoib3NpbnQtYWRtaW4tZGV2IGRldiIsInByZWZlcnJlZF91c2VybmFtZSI6Im9zaW50LWFkbWluLWRldiIsImdpdmVuX25hbWUiOiJvc2ludC1hZG1pbi1kZXYiLCJmYW1pbHlfbmFtZSI6ImRldiIsImVtYWlsIjoib3NpbnQtYWRtaW4tZGV2QGl0aS5nciJ9.N3kiijWDk2tuB6MlnPW4pAIInWq2kbOO72CWXwQ-n-e3eD0oO3zBk8O0-LzK5uNu_tvwUQYTNJCVAZdu8cAHq7zl2lM2yJAS0TBX7uZgAVAoDkklUG0TqjaWMcpZctOCe_KE9wAyDr_nhx5Hp98IihLbCpcEGoHp8HsiPq7nmL-1W1BzlMDb_ph5J7cMNXG9z1cUR-NV8HxhXQL-JT1urkHtHaxIRgFc1FGw1-l3UeRsdLRtooBDkIIaKKLottBxLuoKEy-mBM7_ylQb_mP4KSgTNDWzqQYxnbosYop98wPiCrlJFwM4vDqkKwBZ0jEqkZGpDHg74HdEcANgkGwJxw
+      - NEO4J_REFRESH_TOKEN=eyJhbGciOiJIUzUxMiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJmNDI1MTNiYi05MzBhLTRjOGItYWVkNi0zZmRjYzc4MzBlZjQifQ.eyJleHAiOjE3Njk3MTEyMDUsImlhdCI6MTc2OTY4MjQwNSwianRpIjoiZTIyMTVhZDMtMWRiYi00ZGU4LTg2ODMtOTRjZTNmYjQyOWNkIiwiaXNzIjoiaHR0cHM6Ly9zYWZlZ3VhcmQtcGxhdGZvcm0ubTRkLml0aS5nci9hdXRoL3JlYWxtcy9TQUZFR1VBUkQiLCJhdWQiOiJodHRwczovL3NhZmVndWFyZC1wbGF0Zm9ybS5tNGQuaXRpLmdyL2F1dGgvcmVhbG1zL1NBRkVHVUFSRCIsInN1YiI6IjY3OTM0YTI3LTA5YjQtNDhiOS1iMjYwLTMzNzZiNTM3YTIzMiIsInR5cCI6Ik9mZmxpbmUiLCJhenAiOiJzZG1hLWFwaSIsInNpZCI6IjAzNThlYjg5LTdhNWItNDU4YS1iZWI0LTM2ZWY0MDgwZWM0ZCIsInNjb3BlIjoicm9sZXMgYmFzaWMgZW1haWwgb2ZmbGluZV9hY2Nlc3Mgd2ViLW9yaWdpbnMgYWNyIHByb2ZpbGUifQ.FpAy6fiJkKIkb9izjby3a0YHrNnghgRsAY2nhk5Reclaok3v9EZ-MEm0bakruuZCbxZnd7dukkwPIiNfhpz72A
+      - NEO4J_CLIENT_ID=sdma-api
+      - NEO4J_CLIENT_SECRET=wRjP6rTzz6pNY2f9FzLi6rOul22NH5mJ
+      - NEO4J_USERNAME=osint-admin-dev
+      - NEO4J_PASSWORD=Osint-admin-dev-1
+      # - LANG_DETECT_URL=http://lang-detector:12020/detect
+      # - NEO4J_URL=http://neo4j-api:4567
     #restart: unless-stopped
 
   twitch_ctrl:
     build:
       context: ./Twitch_Ctrl
       dockerfile: Dockerfile
-    image: cesagram/m4d/twitch_ctrl:2.0
+    image: cesagram/m4d/twitch_ctrl:4.0
     container_name: twitch_ctrl
     depends_on:
       - twitch_api
     environment:
+      # - SOCKET_URL=http://160.40.53.99:3000
       - SOCKET_URL=http://twitch_api:3000
-      # - BOOTSTRAP_SERVERS=160.40.53.99:9092
-      # - NEO4J_URL=http://160.40.53.99:4567
+      - BOOTSTRAP_SERVERS=160.40.53.99:9092
+      - NEO4J_URL= https://safeguard-platform.m4d.iti.gr/db-dev
+      - NEO4J_TOKEN_PROVIDER_URL=http://twitch_api:3000/internal/neo4j/token
+      - NEO4J_CLIENT_ID=sdma-api
+      - NEO4J_CLIENT_SECRET=wRjP6rTzz6pNY2f9FzLi6rOul22NH5mJ
+      - NEO4J_USERNAME=osint-admin-dev
+      - NEO4J_PASSWORD=Osint-admin-dev-1
+      - TOPIC_MESSAGE_DONE=10_CRAWLER_DATA
       - BOOTSTRAP_SERVERS=kafka:9093
-      - NEO4J_URL=http://neo4j-api:4567
+      # - NEO4J_URL=http://neo4j-api:4567
 
 volumes:
   mongo-data:    
