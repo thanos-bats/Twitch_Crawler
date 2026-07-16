@@ -100,9 +100,12 @@ class SocketClient:
         }
         
         try:
-            document_response, document_response_status = make_request(f"{os.getenv('NEO4J_URL')}/documents/SocialMedia", None, None, document_data, "POST")
-            entity_response, entity_response_status  = make_request(f"{os.getenv('NEO4J_URL')}/entities", None, None, entity_data, "POST")
-            if document_response_status != 201 or entity_response_status != 201:
+            neo4j_base = (os.getenv("NEO4J_URL") or "").strip().rstrip("/")
+            document_response, document_response_status = make_request(f"{neo4j_base}/documents/SocialMedia", None, None, document_data, "POST")
+            entity_response, entity_response_status  = make_request(f"{neo4j_base}/entities", None, None, entity_data, "POST")
+            if document_response_status not in (200, 201) or entity_response_status not in (200, 201):
+                print(f"Failed to persist comment: document={document_response_status} {document_response}, "
+                      f"entity={entity_response_status} {entity_response}")
                 return
             
             docId = document_response['data']['id']
@@ -113,7 +116,7 @@ class SocketClient:
                 "type": "hasAuthor"
             }
             
-            _, _ = make_request(f"{os.getenv('NEO4J_URL')}/relationships", None, None, relationship_data, "POST")
+            _, _ = make_request(f"{neo4j_base}/relationships", None, None, relationship_data, "POST")
 
             # self.send_message_to_kafka(streamer_name, caseId, taskId, jobId, docId)
         except requests.exceptions.RequestException as e:
@@ -154,12 +157,32 @@ class SocketClient:
             docId)
         self.producer.send_message(topic, message)
 
+def _safe_response_json(response):
+    """Parse JSON body; return a dict describing non-JSON/empty bodies."""
+    text = (response.text or "").strip()
+    if not text:
+        return {
+            "status": "Error",
+            "message": "Empty response body",
+            "http_status": response.status_code,
+        }
+    try:
+        return response.json()
+    except ValueError:
+        return {
+            "status": "Error",
+            "message": "Non-JSON response body",
+            "http_status": response.status_code,
+            "body_preview": text[:300],
+        }
+
+
 def make_request(url, params=None, headers=None, data=None, method="GET"):
     try:
         # Automatically attach Neo4j bearer token for Neo4j requests.
         # The token is fetched from the Twitch_API service, which is
         # responsible for generating and refreshing it.
-        neo4j_url = os.getenv("NEO4J_URL")
+        neo4j_url = (os.getenv("NEO4J_URL") or "").strip()
         if neo4j_url and url.startswith(neo4j_url):
             headers = headers.copy() if headers else {}
 
@@ -181,13 +204,17 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
         response.raise_for_status()
         response_data = {
             'status': 'Success',
-            'data': response.json()
+            'data': _safe_response_json(response)
         }
+        # If the success path still got a non-JSON body, treat as failure.
+        if isinstance(response_data['data'], dict) and response_data['data'].get('status') == 'Error':
+            print(f"Request to {url} returned non-JSON success body: {response_data['data']}")
+            return response_data['data'], response.status_code
         return response_data, response.status_code
     
     except requests.exceptions.RequestException as e:
         if hasattr(e, 'response') and e.response is not None:
-            error_data = e.response.json()
+            error_data = _safe_response_json(e.response)
             status_code = e.response.status_code
         else:
             error_data = {
@@ -195,13 +222,13 @@ def make_request(url, params=None, headers=None, data=None, method="GET"):
                 'message': str(e)
             }
             status_code = 500
-        print(f"The error data is {error_data} with status {status_code}")
+        print(f"The error data is {error_data} with status {status_code} (url={url})")
         return error_data, status_code
     
     except ValueError as e:
         error_data = {
             'status': 'Error',
-            'message': 'JSON Decoding Error'
+            'message': f'JSON Decoding Error: {e}'
             }
         return error_data, 500
     

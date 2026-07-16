@@ -32,7 +32,7 @@ def create_jobs_per_streamer(channels, taskId):
     return streamer_data, status_code
 
 def create_job(data, taskId):
-    neo4j_url = os.getenv("NEO4J_URL")
+    neo4j_url = (os.getenv("NEO4J_URL") or "").strip().rstrip("/")
 
     # The incoming payload now uses "username" and "url" etc. instead of "streamerName"/"urls".
     # We normalize here so the rest of the logic and the DB stay compatible.
@@ -166,7 +166,7 @@ def retrieve_comments_start(caseId, crawling_id, channels): # The crawling id is
     return response_data, 200
 
 def update_statuses(taskId):
-    neo4j_url = os.getenv("NEO4J_URL")
+    neo4j_url = (os.getenv("NEO4J_URL") or "").strip().rstrip("/")
     payload = {
         "id": taskId, 
         "status": "Completed"
@@ -429,7 +429,7 @@ def remove_taskId_from_already_crawled(taskId):
     already_crawled.pop(taskId, None)
 
 def get_task(taskId):
-    neo4j_url = os.getenv("NEO4J_URL")
+    neo4j_url = (os.getenv("NEO4J_URL") or "").strip().rstrip("/")
     res, status_code = make_request(f"{neo4j_url}/tasks",{"id": taskId}, None, None, "GET")
     return res, status_code
 

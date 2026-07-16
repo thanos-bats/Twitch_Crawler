@@ -51,7 +51,7 @@ def save_dict_to_json(games, filename):
 
 def make_request(url, params=None, headers=None, data=None, method="GET"):
     try:
-        neo4j_url = os.getenv("NEO4J_URL")
+        neo4j_url = (os.getenv("NEO4J_URL") or "").strip()
         neo4j_token = os.getenv("NEO4J_TOKEN")
         if neo4j_url and neo4j_token and url.startswith(neo4j_url):
             headers = headers.copy() if headers else {}
