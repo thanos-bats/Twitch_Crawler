@@ -25,6 +25,11 @@ def load_dict_from_file(filename):
         return {"data": []}
 
 def insert_many(games):
+    # Clear existing documents first so re-running this init (e.g. on every
+    # `docker compose up`) does not create duplicate game entries.
+    deleted = collection.delete_many({}).deleted_count
+    if deleted:
+        print(f"Cleared {deleted} existing documents before seeding.")
     result = collection.insert_many(games["data"])
     return result.inserted_ids
 
